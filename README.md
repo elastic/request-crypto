@@ -15,7 +15,7 @@
 2. Use RSA Public key to encrypt the AES key
 3. Send encrypted AES key, along with the payload in the request.
 
-**Decryption Process (recieving side)**
+**Decryption Process (receiving side)**
 
 1. Use RSA private key to decrypt header and parse AES Key
 2. Decrypt payload with AES Key
@@ -31,7 +31,7 @@ AES key with the public key, and send that key along with the request.
 
 
 **Where to put the Key?**
-- The private key must not be shared. It must be kept by the recieving side only.
+- The private key must not be shared. It must be kept by the receiving side only.
 - The public key can be shared. sender side uses the public key to encrypt messages and
 send accross the wires.
 - The AES Key will be generated on the sender's side uniquely for each client on install
@@ -57,7 +57,7 @@ request
   .set('X-AUTH-KEY', key)
 ```
 
-**Decrypting Payload (recieving side):**
+**Decrypting Payload (receiving side):**
 
 ```js
 import { decryptPayload } from '@elastic/request-crypto'
