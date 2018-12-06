@@ -1,0 +1,5 @@
+node_modules
+_tests
+lib
+coverage
+.nyc_output

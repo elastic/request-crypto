@@ -1,0 +1,26 @@
+{
+  "all": true,
+  "require": [
+    "ts-node/register",
+    "tsconfig-paths/register",
+    "source-map-support/register"
+  ],
+  "extension": [
+    ".ts",
+    ".tsx"
+  ],
+  "exclude": [
+    "coverage/**/*",
+    "test/**/*",
+    "lib/index.js",
+    "src/index.ts",
+    "**/*.d.ts"
+  ],
+  "reporter": [
+    "lcov",
+    "text-summary"
+  ],
+  "cache": false,
+  "sourceMap": false,
+  "instrument": true
+}
