@@ -49,6 +49,7 @@ or server lift.
 ```js
 import { encryptPayload } from '@elastic/request-crypto'
 
+const publicKey = await readFileAsync(publicKeyPath, 'utf-8');
 const {key, payload} = await encryptPayload(data, publicKey);
 
 request
