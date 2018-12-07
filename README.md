@@ -55,6 +55,7 @@ request
   .post(uri)
   .send(payload)
   .set('X-AUTH-KEY', key)
+  .set('Content-Type', 'text/plain');
 ```
 
 **Decrypting Payload (receiving side):**
