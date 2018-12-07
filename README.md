@@ -64,6 +64,10 @@ request
 ```js
 import { decryptPayload } from '@elastic/request-crypto'
 
+const privateKey = {
+  key: await readFileAsync(privateKeyPath, 'utf-8'),
+  passphrase: 'your_private_passphrase',
+};
 const key = request.headers['X-AUTH-KEY']
 const payload = await decryptPayload(request.body, key, privateKey)
 ```
