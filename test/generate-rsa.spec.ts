@@ -1,11 +1,12 @@
 /// <reference path="typings/global.d.ts" />
 
 import { generateKeyPair, generateKeyPairSync, generatePassphrase } from '../src/generate-rsa'
-import { checkCompatiblity } from '../src/util'
+import { checkNodeCompatiblity } from '../src/util'
 
 const isCompatible = (function() {
   try {
-    checkCompatiblity();
+    // `crypto.generateKeyPair` is only supported after node version 10.12.0
+    checkNodeCompatiblity(10.12);
     return true
   } catch(err) {
     return false
