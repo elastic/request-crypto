@@ -1,15 +1,12 @@
 /// <reference path="typings/global.d.ts" />
 
-import {
-  encryptPayload,
-  decryptPayload,
-} from '../src'
+import { decryptPayload, encryptPayload } from '../src';
 
-import { promisify } from 'util'
-import { readFile } from 'fs'
-import * as path from 'path'
+import { readFile } from 'fs';
+import * as path from 'path';
+import { promisify } from 'util';
 
-const readFileAsync = promisify(readFile)
+const readFileAsync = promisify(readFile);
 const privateKeyPath = path.join(__dirname, 'fixture/private_key.pem');
 const publicKeyPath = path.join(__dirname, 'fixture/public_key.pem');
 
@@ -27,10 +24,10 @@ describe('request crypto', () => {
   let publicKey: string;
   let privateKey: any;
 
-  let encryptedKeyForSmall: string
-  let encryptedKeyForLarge: string
-  let encryptedLargePayload: string
-  let encryptedSmallPayload: string
+  let encryptedKeyForSmall: string;
+  let encryptedKeyForLarge: string;
+  let encryptedLargePayload: string;
+  let encryptedSmallPayload: string;
 
   before(async () => {
     publicKey = await readFileAsync(publicKeyPath, 'utf-8');
@@ -43,28 +40,35 @@ describe('request crypto', () => {
     largePayload = JSON.parse(await readFileAsync(largePayloadPath, 'utf-8'));
     encryptedKeyForLarge = await readFileAsync(encryptedLargePayloadKeyPath, 'utf-8');
     encryptedLargePayload = await readFileAsync(encryptedLargePayloadPath, 'utf-8');
-  })
+  });
 
   describe('encryptPayload', () => {
     it('encrypts small payload with public key', async () => {
-      const result = await encryptPayload(smallPayload, publicKey)
-      expect(result).to.have.all.keys(['payload', 'key'])
-    })
+      const result = await encryptPayload(smallPayload, publicKey);
+      expect(result).to.have.all.keys(['payload', 'key']);
+    });
     it('encrypts large payload with public key', async () => {
-      const result = await encryptPayload(largePayload, publicKey)
-      expect(result).to.have.all.keys(['payload', 'key'])
-    })
-  })
+      const result = await encryptPayload(largePayload, publicKey);
+      expect(result).to.have.all.keys(['payload', 'key']);
+    });
+  });
 
   describe('decryptPayload', () => {
     it('decrypts small payload with private key', async () => {
-      const decryptedPayload = await decryptPayload(encryptedSmallPayload, encryptedKeyForSmall, privateKey);
-      expect(decryptedPayload).to.eql(smallPayload)
+      const decryptedPayload = await decryptPayload(
+        encryptedSmallPayload,
+        encryptedKeyForSmall,
+        privateKey
+      );
+      expect(decryptedPayload).to.eql(smallPayload);
     });
     it('decrypts large payload with private key', async () => {
-      const decryptedPayload = await decryptPayload(encryptedLargePayload, encryptedKeyForLarge, privateKey);
-      expect(decryptedPayload).to.eql(largePayload)
-    })
+      const decryptedPayload = await decryptPayload(
+        encryptedLargePayload,
+        encryptedKeyForLarge,
+        privateKey
+      );
+      expect(decryptedPayload).to.eql(largePayload);
+    });
   });
-
-})
+});
