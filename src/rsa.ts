@@ -3,10 +3,15 @@ import * as crypto from 'crypto';
 const PUBLIC_RSA_PADDING: number = (crypto as any).constants.RSA_PKCS1_OAEP_PADDING;
 const PRIVATE_RSA_PADDING: number = (crypto as any).constants.RSA_PKCS1_OAEP_PADDING;
 
-function createKeyDetails(
-  key: any,
-  padding: number
-): crypto.RsaPublicKey | crypto.RsaPrivateKey | null {
+type AnyRsaKey = crypto.RsaPublicKey | crypto.RsaPrivateKey;
+export type PublicKey = string | crypto.RsaPublicKey;
+export type PrivateKey = string | crypto.RsaPrivateKey;
+export interface RsaPair {
+  publicKey?: PublicKey;
+  privateKey?: PrivateKey;
+}
+
+function createKeyDetails(key: any, padding: number): AnyRsaKey | null {
   if (typeof key === 'undefined') {
     return null;
   }
@@ -15,15 +20,6 @@ function createKeyDetails(
     ...(typeof key === 'string' ? { key } : key),
     padding,
   };
-}
-
-export type PublicKey = string | crypto.RsaPublicKey;
-
-export type PrivateKey = string | crypto.RsaPrivateKey;
-
-export interface RsaPair {
-  publicKey?: PublicKey;
-  privateKey?: PrivateKey;
 }
 
 export function makeRSACryptoWith(pair: RsaPair) {
@@ -55,6 +51,7 @@ export function makeRSACryptoWith(pair: RsaPair) {
 
     return crypto.privateDecrypt(privateKey, messageBuffer);
   }
+
   function privateEncrypt(message: string): Buffer {
     if (!privateKey) {
       throw Error('Private Key required.');

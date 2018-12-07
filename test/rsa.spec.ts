@@ -12,7 +12,6 @@ const publicKeyPath = path.join(__dirname, 'fixture/public_key.pem');
 const encryptedRSAPath = path.join(__dirname, 'fixture/somekey.base64.enc');
 
 describe('RSA', () => {
-  // const encryptedKey = "";
   let publicKey: string;
   let encryptedRSA: string;
   let privateKey: string;

@@ -38,13 +38,13 @@ send accross the wires.
 or server lift.
 
 
-> Notice: Encrypted payloads fail to be decrypted properly between major versions.
+> Notice: Encrypted payloads may fail to be decrypted properly between major versions.
 
 
 
 ## Usage
 
-**Encrypting Payload (sending side):**
+### Encrypting Payload (sending side):
 
 ```js
 import { encryptPayload } from '@elastic/request-crypto'
@@ -55,9 +55,10 @@ request
   .post(uri)
   .send(payload)
   .set('X-AUTH-KEY', key)
+  .set('Content-Type', 'text/plain');
 ```
 
-**Decrypting Payload (receiving side):**
+### Decrypting Payload (receiving side):
 
 ```js
 import { decryptPayload } from '@elastic/request-crypto'
