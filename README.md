@@ -9,18 +9,18 @@
 </p>
 
 
-**Encryption Process (sender side)**
+### Encryption Process (sender side)
 
 1. Encrypt payload with a strong AES Key
 2. Use RSA Public key to encrypt the AES key
 3. Send encrypted AES key, along with the payload in the request.
 
-**Decryption Process (receiving side)**
+### Decryption Process (receiving side)
 
 1. Use RSA private key to decrypt header and parse AES Key
 2. Decrypt payload with AES Key
 
-**Why?**
+### Why?
 
 With RSA, the data to be encrypted is first mapped on to an integer. For
 RSA to work, this integer must be smaller than the RSA modulus used. In other words,
@@ -30,7 +30,7 @@ The way to solve this is to encrypt the payload with a strong AES key, then encr
 AES key with the public key, and send that key along with the request.
 
 
-**Where to put the Key?**
+### Where to put the Key?
 - The private key must not be shared. It must be kept by the receiving side only.
 - The public key can be shared. sender side uses the public key to encrypt messages and
 send accross the wires.
