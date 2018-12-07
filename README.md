@@ -49,6 +49,7 @@ or server lift.
 ```js
 import { encryptPayload } from '@elastic/request-crypto'
 
+const publicKey = await readFileAsync(publicKeyPath, 'utf-8');
 const {key, payload} = await encryptPayload(data, publicKey);
 
 request
@@ -63,6 +64,10 @@ request
 ```js
 import { decryptPayload } from '@elastic/request-crypto'
 
+const privateKey = {
+  key: await readFileAsync(privateKeyPath, 'utf-8'),
+  passphrase: 'your_private_passphrase',
+};
 const key = request.headers['X-AUTH-KEY']
 const payload = await decryptPayload(request.body, key, privateKey)
 ```
