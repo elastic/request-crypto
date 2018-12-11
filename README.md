@@ -34,9 +34,7 @@ AES key with the public key, and send that key along with the request.
 - The private key must not be shared. It must be kept by the receiving side only.
 - The public key can be shared. sender side uses the public key to encrypt messages and
 send accross the wires.
-- The AES Key will be generated on the sender's side uniquely for each client on install
-or server lift.
-
+- The AES Key will be generated on the sender's side uniquely on each request.
 
 > Notice: Encrypted payloads may fail to be decrypted properly between major versions.
 

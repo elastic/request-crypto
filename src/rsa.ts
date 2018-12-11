@@ -1,7 +1,8 @@
 import * as crypto from 'crypto';
+import * as constants from 'constants';
 
-const PUBLIC_RSA_PADDING: number = (crypto as any).constants.RSA_PKCS1_OAEP_PADDING;
-const PRIVATE_RSA_PADDING: number = (crypto as any).constants.RSA_PKCS1_OAEP_PADDING;
+const PUBLIC_RSA_PADDING: number = constants.RSA_PKCS1_OAEP_PADDING;
+const PRIVATE_RSA_PADDING: number = constants.RSA_PKCS1_OAEP_PADDING;
 
 type AnyRsaKey = crypto.RsaPublicKey | crypto.RsaPrivateKey;
 export type PublicKey = string | crypto.RsaPublicKey;
