@@ -11,7 +11,7 @@ export interface RsaPair {
   privateKey?: PrivateKey;
 }
 
-function createKeyDetails(key: any, padding: number): AnyRsaKey | null {
+function createKeyDetails(key: PublicKey | PrivateKey | undefined, padding: number): AnyRsaKey | null {
   if (typeof key === 'undefined') {
     return null;
   }
