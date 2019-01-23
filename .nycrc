@@ -12,7 +12,7 @@
   "exclude": [
     "coverage/**/*",
     "test/**/*",
-    "lib/index.js",
+    "lib/**/*",
     "src/index.ts",
     "**/*.d.ts"
   ],

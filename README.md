@@ -29,6 +29,8 @@ public key cannot be used to encrypt large payloads.
 The way to solve this is to encrypt the payload with a strong AES key, then encrypt the
 AES key with the public key, and send that key along with the request.
 
+RSA is almost never used for data encryption. The approach we've taken here is the common one (TLS, PGP etc do the same in principle) where a symmetric key is used for data encryption and that key is then encrypted with RSA. Size is one constraint, the other is performance as RSA is painfully slow compared to a symmetric key cipher such as AES.
+
 
 ### Where to put the Key?
 - The private key must not be shared. It must be kept by the receiving side only.
