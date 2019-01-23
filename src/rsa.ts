@@ -35,15 +35,6 @@ export function makeRSACryptoWith(pair: RsaPair) {
     return crypto.publicEncrypt(publicKey, messageBuffer);
   }
 
-  function publicDecrypt(message: string): Buffer {
-    if (!publicKey) {
-      throw Error('Public Key required.');
-    }
-    const messageBuffer = Buffer.from(message, 'base64');
-
-    return crypto.publicDecrypt(publicKey, messageBuffer);
-  }
-
   function privateDecrypt(message: string): Buffer {
     if (!privateKey) {
       throw Error('Private Key required.');
@@ -53,19 +44,8 @@ export function makeRSACryptoWith(pair: RsaPair) {
     return crypto.privateDecrypt(privateKey, messageBuffer);
   }
 
-  function privateEncrypt(message: string): Buffer {
-    if (!privateKey) {
-      throw Error('Private Key required.');
-    }
-    const messageBuffer = Buffer.from(message, 'base64');
-
-    return crypto.privateEncrypt(privateKey, messageBuffer);
-  }
-
   return {
     publicEncrypt,
-    publicDecrypt,
-    privateEncrypt,
     privateDecrypt,
   };
 }
