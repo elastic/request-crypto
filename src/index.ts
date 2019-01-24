@@ -16,7 +16,7 @@ export async function encryptPayload(payload: Partial<object>, publicKey: Public
   };
 }
 
-export function decryptPayload(payload: string, encryptedAESKey: string, privateKey: PrivateKey) {
+export async function decryptPayload(payload: string, encryptedAESKey: string, privateKey: PrivateKey) {
   const RSA = makeRSACryptoWith({ privateKey });
   const AESKey = RSA.privateDecrypt(encryptedAESKey);
 

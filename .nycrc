@@ -13,7 +13,6 @@
     "coverage/**/*",
     "test/**/*",
     "lib/**/*",
-    "src/index.ts",
     "**/*.d.ts"
   ],
   "reporter": [
