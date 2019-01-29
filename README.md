@@ -12,7 +12,7 @@
 ### Encryption Process (sender side)
 
 1. Randomly Generate a 32-bytes passphrase.
-2. Encrypt payload with a strong AES using the passphrase
+2. Encrypt payload with a strong AES 256 bit key that is derived from the passphrase
 3. Select Appropriate Public Key from a list of well-known keys (JWKS) based on `kid`.
 4. Use RSA Public key to encrypt the AES key
 3. Send encrypted AES key, along with the payload in the request.
@@ -23,7 +23,7 @@
   a. Parse encrypted key from request header.
   b. Select correct Private key based on `kid` from the JWKS pairs.
   c. Decrypt passphrase.
-2. Decrypt payload with decrypted AES passphrase.
+2. Decrypt payload with the AES key that is derived from the decrypted passphrase.
 
 ### Why?
 
@@ -38,7 +38,7 @@ RSA is almost never used for data encryption. The approach we've taken here is t
 
 ### Where to put the Key?
 - RSA JSON Public Key Sets are kept in a JSON Web Key Set on a `.well-known` URI.
-- RSA JSON Public Key Pairs are kept private and must never be shared.
+- RSA Private Keys are kept private and must never be shared.
 - The AES Passphrase will be generated on the sender's side uniquely on each request.
 
 
