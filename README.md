@@ -38,14 +38,14 @@ RSA is almost never used for data encryption. The approach we've taken here is t
 
 
 ### Where to put the Key?
-- RSA JSON Public Key Sets are kept in a `.well-known` url following JWKS RFC recommendations.
+- RSA JSON Public Key Sets are kept in a JSON Web Key Set on a `.well-known` URI.
 - RSA JSON Public Key Pairs are kept private and must never be shared.
 - The AES Passphrase will be generated on the sender's side uniquely on each request.
 
 
 ## Usage
 
-### Encrypting Payload (sending side):
+### Encrypting Payload (client side):
 
 ```js
 import { encryptPayload } from '@elastic/request-crypto';
@@ -60,7 +60,7 @@ request
   .set('Content-Type', 'text/plain');
 ```
 
-### Decrypting Payload (receiving side):
+### Decrypting Payload (server side):
 
 ```js
 import { decryptPayload } from '@elastic/request-crypto';
