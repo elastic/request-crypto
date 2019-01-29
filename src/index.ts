@@ -14,7 +14,10 @@ export async function encryptPayload(
   const encryptedPayload = await AES.encrypt(payload);
 
   const jwkManager = await createJWKManager(publicJWKS);
-  const encryptedKey = await jwkManager.encrypt(kid, AESKey);
+
+  const AESKeyBuffer = Buffer.from(AESKey, 'base64');
+
+  const encryptedKey = await jwkManager.encrypt(kid, AESKeyBuffer);
 
   return {
     payload: encryptedPayload,
