@@ -37,6 +37,7 @@
     "typescript": "3.2.1"
   },
   "dependencies": {
-    "@elastic/node-crypto": "^0.1.2"
+    "@elastic/node-crypto": "^0.1.2",
+    "node-jose": "1.1.0"
   }
 }

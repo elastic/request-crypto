@@ -11,14 +11,19 @@
 
 ### Encryption Process (sender side)
 
-1. Encrypt payload with a strong AES Key
-2. Use RSA Public key to encrypt the AES key
+1. Randomly Generate a 32-bytes passphrase.
+2. Encrypt payload with a strong AES using the passphrase
+3. Select Appropriate Public Key from a list of well-known keys (JWKS) based on `kid`.
+4. Use RSA Public key to encrypt the AES key
 3. Send encrypted AES key, along with the payload in the request.
 
 ### Decryption Process (receiving side)
 
-1. Use RSA private key to decrypt header and parse AES Key
-2. Decrypt payload with AES Key
+1. Decrypt the AES Passphrase.
+  a. Parse encrypted key from request header.
+  b. Select correct Private key based on `kid` from the JWKS pairs.
+  c. Decrypt passphrase.
+2. Decrypt payload with decrypted AES passphrase.
 
 ### Why?
 
@@ -33,13 +38,9 @@ RSA is almost never used for data encryption. The approach we've taken here is t
 
 
 ### Where to put the Key?
-- The private key must not be shared. It must be kept by the receiving side only.
-- The public key can be shared. sender side uses the public key to encrypt messages and
-send accross the wires.
-- The AES Key will be generated on the sender's side uniquely on each request.
-
-> Notice: Encrypted payloads may fail to be decrypted properly between major versions.
-
+- RSA JSON Public Key Sets are kept in a `.well-known` url following JWKS RFC recommendations.
+- RSA JSON Public Key Pairs are kept private and must never be shared.
+- The AES Passphrase will be generated on the sender's side uniquely on each request.
 
 
 ## Usage
@@ -47,10 +48,10 @@ send accross the wires.
 ### Encrypting Payload (sending side):
 
 ```js
-import { encryptPayload } from '@elastic/request-crypto'
+import { encryptPayload } from '@elastic/request-crypto';
 
-const publicKey = await readFileAsync(publicKeyPath, 'utf-8');
-const {key, payload} = await encryptPayload(data, publicKey);
+const wellKnowns = request.get('<domain>/.well-known');
+const {key, payload} = await encryptPayload(input, kid, wellKnowns);
 
 request
   .post(uri)
@@ -62,13 +63,54 @@ request
 ### Decrypting Payload (receiving side):
 
 ```js
-import { decryptPayload } from '@elastic/request-crypto'
+import { decryptPayload } from '@elastic/request-crypto';
 
+const JWKSPairs = `<fetched from private location>`;
 const privateKey = {
   key: await readFileAsync(privateKeyPath, 'utf-8'),
   passphrase: 'your_private_passphrase',
 };
-const key = request.headers['X-AUTH-KEY']
-const payload = await decryptPayload(request.body, key, privateKey)
+const key = request.headers['X-AUTH-KEY'];
+const payload = await decryptPayload(request.body, key, JWKSPairs);
 ```
 
+
+## Key Rotation: JWKS
+
+Json Web Key Sets are used for key rotation.
+
+### Create a new keyset
+
+```js
+import { createJWKManager } from '@elastic/request-crypto';
+const jwksManager = await createJWKManager();
+await jwksManager.addKey(`<kid>`);
+```
+
+### Use existing keyset
+
+```js
+import { createJWKManager } from '@elastic/request-crypto';
+const existingJWKS = `<fetched from a .well-known URI>
+const jwksManager = await createJWKManager(existingJWKS);
+```
+
+### Get Public Keys (for well-known URI)
+
+```js
+import { createJWKManager } from '@elastic/request-crypto';
+const existingJWKS = `<fetched from a .well-known URI>
+const jwksManager = await createJWKManager(existingJWKS);
+
+jwksManager.getPublicJWKS();
+```
+
+### Get Full Key pairs Inlcudes private key details
+
+```js
+import { createJWKManager } from '@elastic/request-crypto';
+const existingJWKS = `<fetched from a .well-known URI>
+const jwksManager = await createJWKManager(existingJWKS);
+
+jwksManager.getFullJWKS();
+```

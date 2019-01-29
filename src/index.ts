@@ -1,25 +1,31 @@
 import { makeAESCryptoWith } from './aes';
-import { generatePassphrase } from './generate-rsa';
-import { makeRSACryptoWith, PrivateKey, PublicKey } from './rsa';
+import { createJWKManager, FullJWKS, PublicJWKS } from './jwk';
+import { generatePassphrase } from './random-bytes';
 
-export async function encryptPayload(payload: Partial<object>, publicKey: PublicKey) {
+export * from './jwk';
+
+export async function encryptPayload(
+  payload: Partial<object>,
+  kid: string,
+  publicJWKS: PublicJWKS
+) {
   const AESKey = generatePassphrase();
   const AES = makeAESCryptoWith({ encryptionKey: AESKey });
   const encryptedPayload = await AES.encrypt(payload);
 
-  const RSA = makeRSACryptoWith({ publicKey });
-  const encryptedKey = RSA.publicEncrypt(AESKey);
+  const jwkManager = await createJWKManager(publicJWKS);
+  const encryptedKey = await jwkManager.encrypt(kid, AESKey);
 
   return {
     payload: encryptedPayload,
-    key: encryptedKey.toString('base64'),
+    key: encryptedKey,
   };
 }
 
-export async function decryptPayload(payload: string, encryptedAESKey: string, privateKey: PrivateKey) {
-  const RSA = makeRSACryptoWith({ privateKey });
-  const AESKey = RSA.privateDecrypt(encryptedAESKey);
+export async function decryptPayload(payload: string, encryptedAESKey: string, fullJWKS: FullJWKS) {
+  const jwkManager = await createJWKManager(fullJWKS);
+  const encryptionKey = await jwkManager.decrypt(encryptedAESKey);
 
-  const AES = makeAESCryptoWith({ encryptionKey: AESKey });
+  const AES = makeAESCryptoWith({ encryptionKey });
   return AES.decrypt(payload);
 }
