@@ -36,7 +36,6 @@ AES key with the public key, and send that key along with the request.
 
 RSA is almost never used for data encryption. The approach we've taken here is the common one (TLS, PGP etc do the same in principle) where a symmetric key is used for data encryption and that key is then encrypted with RSA. Size is one constraint, the other is performance as RSA is painfully slow compared to a symmetric key cipher such as AES.
 
-
 ### Where to put the Key?
 - RSA JSON Public Key Sets are kept in a JSON Web Key Set on a `.well-known` URI.
 - RSA JSON Public Key Pairs are kept private and must never be shared.
@@ -78,6 +77,14 @@ const payload = await decryptPayload(request.body, key, JWKSPairs);
 ## Key Rotation: JWKS
 
 Json Web Key Sets are used for key rotation.
+
+#### Why Key rotation?
+
+Having different keys for different usecases/versions and making them accessable on a public URI has multiple benefits. It gives us the flexibility to change the keys without informing the clients or requiring clients to create a new release to use the new keys in case the key gets compromised. Having keys per use case will reduce the surface of damage in case a key compromise happens.
+
+#### Do I need a `.well-known` URI
+
+Having the URI `.well-known` indicates that the implementation is following the JWTS RFC. This URI is also required to register the endpoint with `IANA` in case there is a need for public developer consumption.
 
 ### Create a new keyset
 
