@@ -11,10 +11,10 @@
 ### High level overview
 
 There are 4 parts involved for JWK+POP:
-- Mediator (browser)
-- Sender (kibana server)
+- Mediator (Browser)
+- Sender (Kibana server)
 - Well Known URI (Telemetry Service)
-- Reciever (Telemetry service)
+- Receiver (Telemetry service)
 
 1. Mediator hits the well-known URI and provides the sender Identity.
 2. Well-known URI responds with signed JWKS based on provided identity.
@@ -26,11 +26,11 @@ There are 4 parts involved for JWK+POP:
    4. Sender encrypts payload with a strong AES 256 bit key that is derived from the passphrase.
    5. Sender encrypts the AES key with the selected JWK.
    6. Sender sends the Mediator the AES encrypted payload and the JWK encrypted AES key.
-5. Mediator sends the enrypted payload to Reciever.
-6. Reciever gets the needed data from mediators
-   1. Reciever decrypts AES key using the corrisponsing public key's pair.
-   2. Reciever decrypts payload with decrypted AES key.
-   3. Reciever processes payload.
+5. Mediator sends the enrypted payload to Receiver.
+6. Receiver gets the needed data from mediators
+   1. Receiver decrypts AES key using the corrisponsing public key's pair.
+   2. Receiver decrypts payload with decrypted AES key.
+   3. Receiver processes payload.
 
 ### Why?
 
@@ -190,3 +190,12 @@ jwksManager.getPublicJWKS();
 // get full Key pairs Inlcuding private components
 jwksManager.getPrivateJWKS();
 ```
+
+### RFCs followed for implementation details
+
+- JWK RFC: https://tools.ietf.org/html/rfc7517
+- JWK Thumbprint RFC: https://tools.ietf.org/html/rfc7638
+- JWKS RFC: https://tools.ietf.org/html/rfc7517#appendix-A
+- PKCS RFC: https://tools.ietf.org/html/rfc3447
+- Well-Known URIs RFC: (https://tools.ietf.org/html/rfc5785#section-3
+- Proof of possession RFC: https://tools.ietf.org/html/rfc7800
