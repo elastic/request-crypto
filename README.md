@@ -1,7 +1,7 @@
 # Request Cryptography
 
 <p align="center">
-  Encrypt/decrypt request payloads.
+  JWK+POP with AES Encryption for Request Encrypt/decrypt
 </p>
 
 <p align="center">
@@ -119,5 +119,5 @@ import { createJWKManager } from '@elastic/request-crypto';
 const existingJWKS = `<fetched from a .well-known URI>
 const jwksManager = await createJWKManager(existingJWKS);
 
-jwksManager.getFullJWKS();
+jwksManager.getPrivateJWKS();
 ```

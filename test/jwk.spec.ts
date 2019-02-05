@@ -1,95 +1,91 @@
-/// <reference path="typings/global.d.ts" />
+import * as jose from 'node-jose';
+import { SignedPublicJWK } from '../src/index';
+import { createJWKManager, JWKManager } from '../src/jwk';
 
-import { wellKnowns } from './fixture/well_knowns';
-import { jwksPairs } from './fixture/full_jwks';
+import { privateJWKS } from './fixture/private_jwks';
+import { privatePOPJWKS } from './fixture/private_pop_jwks';
+import { publicJWKS } from './fixture/public_jwks';
+import { publicPOPKey } from './fixture/public_pop_jwks';
 
-import {
-  createJWKManager,
-} from '../src/jwk';
-import { JWK } from 'node-jose'
+const mockJWK = Object.assign({}, jose.JWK, {
+  createKey(type: any, modulus: any, config: any) {
+    // override modulus bit size for faster tests.
+    return jose.JWK.createKey(type, 1024, config);
+  },
+});
 
-describe("JSON Web Keys Manager", () => {
-  let originalCreateKey: any;
+describe('JSON Web Keys Manager', () => {
+  describe('JWKS', () => {
+    it('creates an empty key set', async () => {
+      const manager = await createJWKManager(undefined, mockJWK);
+      const jwks = manager.getPrivateJWKS();
 
-  before(() => {
-    originalCreateKey = JWK.createKey;
-    createJWKManager.JWK.createKey = (type: any, modulus: any, config: any) => {
-      // override modulus bit size for faster tests.
-      return originalCreateKey(type, 1024, config);
-    }
-  })
-
-  describe("JWKS", () => {
-    it("creates an empty key set", async () => {
-      const manager = await createJWKManager();
-      const { keys } = manager.getFullJWKS();
-      
-      expect(keys).to.be.an('array');
-      expect(keys).to.be.empty;
-    })
-    it("creates a prepopulated key set", async () => {
-      const manager = await createJWKManager(wellKnowns);
-      const jwks = manager.getFullJWKS();
-      expect(jwks).to.eql(wellKnowns);
-    })
-    it("adds a new key to the set", async () => {
-      const manager = await createJWKManager();
+      expect(jwks).to.eql({ keys: [] });
+    });
+    it('prepopulates public key sets', async () => {
+      const manager = await createJWKManager(publicJWKS, mockJWK);
+      expect(manager.getPrivateJWKS()).to.eql(publicJWKS);
+      expect(manager.getPublicJWKS()).to.eql(publicJWKS);
+    });
+    it('prepopulates private key sets', async () => {
+      const manager = await createJWKManager(privateJWKS, mockJWK);
+      const publicUJWKS = {
+        ...publicJWKS,
+        keys: publicJWKS.keys.map((key: SignedPublicJWK) => {
+          const { cnf, ...publicJWK } = key;
+          return publicJWK;
+        }),
+      };
+      expect(manager.getPrivateJWKS()).to.eql(privateJWKS);
+      expect(manager.getPublicJWKS()).to.eql(publicUJWKS);
+    });
+    it('adds a new key to the set', async () => {
+      const manager = await createJWKManager(undefined, mockJWK);
       await manager.addKey('KIBANA_7.0');
-      const { keys } = manager.getFullJWKS();
-      expect(keys).to.have.length(1);      
-    })
-  })
+      const { keys } = manager.getPrivateJWKS();
+      expect(keys).to.have.length(1);
+    });
+  });
 
   describe('Encryption / Decryption', () => {
-    const originalMessage = Buffer.from(JSON.stringify({a: 1}), 'utf8').toString('base64');
+    const originalInput = JSON.stringify({ a: 1 });
+    const inputBuffer = Buffer.from(originalInput, 'utf8');
     let encryptedMessage: string;
 
-    it('encrypts string input with public key set', async () => {
-      const manager = await createJWKManager(wellKnowns);
-      encryptedMessage = await manager.encrypt('KIBANA_6.7', originalMessage);
-      expect(encryptedMessage).to.be.a('string');
-      expect(encryptedMessage).to.not.be.empty;
-    })
     it('encrypts Buffer input with public key set', async () => {
-      const manager = await createJWKManager(wellKnowns);
-      const bufferInput = Buffer.from(originalMessage, 'base64');
-      const encryptedMessage2 = await manager.encrypt('KIBANA_6.7', bufferInput);
-      expect(encryptedMessage2).to.be.a('string');
-      expect(encryptedMessage2).to.not.be.empty;
-    })
-
+      const manager = await createJWKManager(publicJWKS, mockJWK);
+      encryptedMessage = await manager.encrypt('KIBANA_6.7', inputBuffer);
+      expect(encryptedMessage).to.be.a('string');
+    });
     it('cannot decrypt messages using public key set', async () => {
-      const manager = await createJWKManager(wellKnowns);
+      const manager = await createJWKManager(publicJWKS, mockJWK);
       let errorMessage = '';
       try {
         await manager.decrypt(encryptedMessage);
-      } catch(err) {
+      } catch (err) {
         errorMessage = err.toString();
       }
       expect(errorMessage).to.equal('Error: no key found');
-    })
+    });
     it('decrypts messages using private key set', async () => {
-      const manager = await createJWKManager(jwksPairs);
-      const message = await manager.decrypt(encryptedMessage);
-      expect(message).to.equal(originalMessage);
-    })
+      const manager = await createJWKManager(privateJWKS, mockJWK);
+      const messageBuffer = await manager.decrypt(encryptedMessage);
+      const messageObject = messageBuffer.toString();
+      expect(messageObject).to.equal(originalInput);
+    });
     it('cannot decrypt messages not encrypted with matching keys', async () => {
-      const unworldlyManager = await createJWKManager();
+      const unworldlyManager = await createJWKManager(undefined, mockJWK);
       await unworldlyManager.addKey('KIBANA_7.0');
-      const undecryptableMessage = await unworldlyManager.encrypt('KIBANA_7.0', originalMessage);
-      const manager = await createJWKManager(jwksPairs);
+      const undecryptableMessage = await unworldlyManager.encrypt('KIBANA_7.0', inputBuffer);
+      const manager = await createJWKManager(privateJWKS, mockJWK);
 
       let errorMessage = '';
       try {
-        await manager.decrypt(undecryptableMessage)
-      } catch(err) {
+        await manager.decrypt(undecryptableMessage);
+      } catch (err) {
         errorMessage = err.toString();
       }
       expect(errorMessage).to.equal('Error: no key found');
-    })
-  })
-
-  after(() => {
-    createJWKManager.JWK.createKey = originalCreateKey;
-  })
-})
+    });
+  });
+});

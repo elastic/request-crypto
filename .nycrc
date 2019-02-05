@@ -20,6 +20,6 @@
     "text-summary"
   ],
   "cache": false,
-  "sourceMap": false,
+  "sourceMap": true,
   "instrument": true
 }

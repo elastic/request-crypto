@@ -1,5 +1,3 @@
-/// <reference path="typings/global.d.ts" />
-
 import { generatePassphrase } from '../src/random-bytes';
 
 describe('helpers', () => {
@@ -11,4 +9,4 @@ describe('helpers', () => {
       expect(pass1).to.not.equal(pass2);
     });
   });
-})
+});
