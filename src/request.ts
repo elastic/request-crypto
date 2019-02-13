@@ -13,7 +13,7 @@ export interface Encryptor {
 }
 
 export interface Decryptor {
-  getPublicComponent(kid: string): PublicJWK;
+  getPublicComponent(kid: string): PublicJWK | null;
   getWellKnowns(): PublicJWKS;
   decrypt(payload: string, encryptedAESKey: string): Promise<Buffer>;
 }
