@@ -1,53 +1,30 @@
 import { makeAESCryptoWith } from './aes';
 import { createJWKManager } from './jwk';
-import { PrivateJWKS, SignedPublicJWKS } from './jwks';
-import { createPOPManager, Identity } from './pop';
+import { PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
 import { generatePassphrase } from './random-bytes';
 
 export interface EncryptionOutput {
   key: string;
   payload: string;
 }
+
 export interface Encryptor {
-  addPOPJWK(): Promise<void>;
-  getPrivatePOPJWKS(): PrivateJWKS;
-  getIdentity(): Identity;
-  verifyAndEncrypt(
-    input: any,
-    kid: string,
-    signedWellKnowns: SignedPublicJWKS
-  ): Promise<EncryptionOutput>;
+  encrypt(kid: string, input: any): Promise<EncryptionOutput>;
 }
 
 export interface Decryptor {
-  getWellKnowns(identity: Identity): Promise<SignedPublicJWKS>;
+  getPublicComponent(kid: string): PublicJWK;
+  getWellKnowns(): PublicJWKS;
   decryptPayload(payload: string, encryptedAESKey: string): Promise<Buffer>;
 }
 
-export async function createRequestEncryptor(privatePOPJWKS?: PrivateJWKS): Promise<Encryptor> {
-  // const jwkManager = await createJWKManager();
-  const popManager = await createPOPManager(privatePOPJWKS);
+export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<Encryptor> {
+  const jwkManager = await createJWKManager(publicJWKS);
   return {
-    async addPOPJWK() {
-      await popManager.addKey();
-    },
-    getPrivatePOPJWKS() {
-      return popManager.getPrivateJWKS();
-    },
-    getIdentity() {
-      return popManager.getIdentity();
-    },
-    async verifyAndEncrypt(input, kid, signedWellKnowns) {
-      const verified = await popManager.verifyJWKS(signedWellKnowns);
-      if (!verified) {
-        throw new Error('Invalid Confirmation Signature.');
-      }
-
+    async encrypt(kid, input) {
       const AESKey = generatePassphrase();
       const AES = makeAESCryptoWith({ encryptionKey: AESKey });
       const encryptedPayload = await AES.encrypt(input);
-
-      const jwkManager = await createJWKManager(signedWellKnowns);
 
       const AESKeyBuffer = Buffer.from(AESKey, 'base64');
 
@@ -64,11 +41,11 @@ export async function createRequestEncryptor(privatePOPJWKS?: PrivateJWKS): Prom
 export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<Decryptor> {
   const jwkManager = await createJWKManager(privateJWKS);
   return {
-    async getWellKnowns(identity) {
-      const wellKnowns = jwkManager.getPublicJWKS();
-      const popManager = await createPOPManager();
-
-      return popManager.signPublicJWKS(wellKnowns, identity);
+    getPublicComponent(kid) {
+      return jwkManager.getPublicJWK(kid);
+    },
+    getWellKnowns() {
+      return jwkManager.getPublicJWKS();
     },
     async decryptPayload(payload, encryptedAESKey) {
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);

@@ -1,7 +1,7 @@
 # Request Cryptography
 
 <p align="center">
-  JWE+POP with AES Encryption for Request Encrypt/decrypt
+  JWK+JWE with AES Encryption for Request Encrypt/decrypt
 </p>
 
 <p align="center">
@@ -10,31 +10,26 @@
 
 ### High level overview
 
-There are 4 parts involved for JWK+POP:
+There are 3 parts involved for JWK encryption:
 - Mediator (Browser)
 - Sender (Kibana server)
-- Well Known URI (Telemetry Service)
 - Receiver (Telemetry service)
 
-1. Mediator hits the well-known URI and provides the sender Identity.
-2. Well-known URI responds with signed JWKS based on provided identity.
-3. Mediator sends the sender the signed JWKS.
-4. Sender gets the needed JWK from the JWKS based on `kid`  and verifies the signature.
-   1. Sender selects JWK based on `kid`.
-   2. Sender verifies JWK signature based on `cnf`.
-   3. Sender encrypts data with a randomly Generate a 32-bytes AES passphrase.
-   4. Sender encrypts payload with a strong AES 256 bit key that is derived from the passphrase.
-   5. Sender encrypts the AES key with the selected JWK.
-   6. Sender sends the Mediator the AES encrypted payload and the JWK encrypted AES key.
-5. Mediator sends the enrypted payload to Receiver.
-6. Receiver gets the needed data from mediators
+1. Mediator Requests Sender for encrypted metrics
+2. Sender gathers metrics and encrypts them following these steps:
+   1. Sender encrypts data with a randomly Generate a 32-bytes AES passphrase.
+   2. Sender encrypts payload with a strong AES 256 bit key that is derived from the passphrase.
+   3. Sender uses stored public JWK to encrypt the AES key with the selected JWK.
+   4. Sender sends the Mediator the AES encrypted payload and the JWK encrypted AES key.
+3. Mediator sends the enrypted payload and enrypted AES key to Receiver.
+4. Receiver gets the needed data from mediators
    1. Receiver decrypts AES key using the corrisponsing public key's pair.
    2. Receiver decrypts payload with decrypted AES key.
    3. Receiver processes payload.
 
 ### Why?
 
-JWK are a way to pass public/private keys (RSA) in JSON format. POP (Proof of Possession) allows an untrusted source (browser) to act as a mediator in passing the JWKS.
+JWK are a way to pass public/private keys (RSA) in JSON format.
 
 With RSA, the data to be encrypted is first mapped on to an integer. For
 RSA to work, this integer must be smaller than the RSA modulus used. In other words,
@@ -47,14 +42,14 @@ RSA is almost never used for data encryption. The approach we've taken here is t
 
 
 ### Where to put the Key?
-- RSA JSON Public Key Sets are kept in a JSON Web Key Set on a `.well-known` URI.
+- RSA Public Keys are distributed with the kibana distribution as a JWK.
 - RSA Private Keys are kept private and must never be shared.
 - The AES Passphrase will be generated on the sender's side uniquely on each request.
 
 ## Usage
 
 Request crypto has two main servicers `Encryptor` and `Decryptor`.
-`Encryptor` is used by the sending side. while `Decryptor` is used by the well-known URI and reciever side.
+`Encryptor` is used by the sending side. while `Decryptor` is used by the recieving side.
 
 
 
@@ -64,32 +59,14 @@ Request crypto has two main servicers `Encryptor` and `Decryptor`.
 import { createRequestEncryptor } from '@elastic/request-crypto';
 import * as fs from 'fs';
 
-async function managePOPJWK() {
-  const privatePOPKeys = await fs.readAsync('...', 'utf8');
-  cont requestEncryptor = await createRequestEncryptor(privatePOPKeys);
-  if(!privatePOPKeys) {
-    const popKey = await requestEncryptor.addPOPJWK();
-    await fs.writeAsync(popKey);
-  }
-}
-
-function appendIdentityToHeader(req) {
-  req.headers['identity'] = requestEncryptor.getIdentity();
-}
-
-async function onInit() {
-  await managePOPJWK();
-}
-
-function onAllRequests(req) {
-  appendIdentityToHeader(req)
-}
-
 function TelemetryEndpointRoute(req, res) {
-  const signedWellKnows = req.body;
   const metrics = await getCollectors();
+  const publicEncryptionKey = await fs.readAsync('...', 'utf8');
+  const requestEncryptor = await createRequestEncryptor(publicEncryptionKey);
+  const version = getKibanaVersion();
+  
   try {
-    const encryptedPaylaod = await requestEncryptor.verifyAndEncrypt(metrics, 'kibana', signedWellKnows)
+    const encryptedPaylaod = await requestEncryptor.encrypt(`kibana_${version}`, metrics);
     res.end(encryptedPaylaod);
   } catch(err) {
     res.status(500).end(`Error: ${err}`);
@@ -101,45 +78,16 @@ function TelemetryEndpointRoute(req, res) {
 #### Mediator (ie browser)
 
 ```js
-async function requestWellKnowns(identity) {
-  return fetch('https://telemetry.elastic.co/.well-known', {
-    method: 'GET',
-    headers: { identity }
-  });
-}
-
-async function getTelemetryMetrics(identity) {
-  const wellKnowns = await requestWellKnowns(identity);
-  return fetch(server.telemetryEndpoint, {
-    method: 'POST',
-    body: { wellKnowns }
-  });
+async function getTelemetryMetrics() {
+  return fetch(server.telemetryEndpoint);
 }
 
 async function sendTelemetryMetrics() {
-  const identity = server.req.headers.identity;
-  const metrics = await getTelemetryMetrics(identity);
+  const metrics = await getTelemetryMetrics();
   return fetch('https://telemetry.elastic.co/v2/xpack', {
+    method: 'POST', 
     body: metrics
   });
-}
-```
-
-#### well-known URI
-
-```js
-import { createRequestDecryptor } from '@elastic/request-crypto';
-import privateJWKS from './privateJWKS';
-
-async function handler (event, context, callback) {
-  const identity = getHeader(event, 'identity');
-  const requestDecryptor = await createRequestDecryptor(privateJWKS);
-  const signedPublicJWKS = await requestDecryptor.getWellKnowns(identity);
-
-  return {
-    status: '200',
-    body: signedPublicJWKS,
-  }
 }
 ```
 
@@ -158,17 +106,14 @@ async function handler (event, context, callback) {
 }
 ```
 
-## Key Rotation: JWKS
+## JWKS
 
-Json Web Key Sets are used for key rotation.
+Json Web Key Sets are to store multiple JWK.
 
 #### Why Key rotation?
 
-Key rotation gives extra flexibility to change the keys without informing the sender side or requiring senders to create a new release to use the new keys in case the key gets compromised. Having keys per use case will reduce the surface of damage in case a key compromise happens.
+Having keys per use case will reduce the surface of damage in case a key compromise happens.
 
-#### Do I need a `.well-known` URI
-
-Having the URI `.well-known` indicates that the implementation is following the JWTS RFC. This URI is also required to register the endpoint with `IANA` in case there is a need for public developer consumption.
 
 ### Create a new keyset
 
@@ -182,7 +127,7 @@ await jwksManager.addKey(`<kid>`);
 
 ```js
 import { createJWKManager } from '@elastic/request-crypto';
-const existingJWKS = `<fetched from a .well-known URI>`
+const existingJWKS = `<fetched from fs>`
 const jwksManager = await createJWKManager(existingJWKS);
 
 // get public key components
@@ -194,8 +139,5 @@ jwksManager.getPrivateJWKS();
 ### RFCs followed for implementation details
 
 - JWK RFC: https://tools.ietf.org/html/rfc7517
-- JWK Thumbprint RFC: https://tools.ietf.org/html/rfc7638
 - JWKS RFC: https://tools.ietf.org/html/rfc7517#appendix-A
 - PKCS RFC: https://tools.ietf.org/html/rfc3447
-- Well-Known URIs RFC: (https://tools.ietf.org/html/rfc5785#section-3
-- Proof of possession RFC: https://tools.ietf.org/html/rfc7800

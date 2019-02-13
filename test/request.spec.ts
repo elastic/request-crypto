@@ -9,15 +9,11 @@ import {
   Encryptor,
 } from '../src/request';
 
-import { identity } from './fixture/identity';
-import { mismatchPublicJWKS } from './fixture/mismatch_public_jwks';
 import { privateJWKS } from './fixture/private_jwks';
-
-import { privatePOPJWKS } from './fixture/private_pop_jwks';
 import { publicJWKS } from './fixture/public_jwks';
 
-import { JWKS, PrivateJWK, PublicJWKS, SignedPublicJWK, SignedPublicJWKS } from '../src';
-import { privateComponents, signedPublicComponents } from './helpers';
+import { JWKS, PrivateJWK, PublicJWK, PublicJWKS } from '../src';
+import { privateComponents, publicComponents } from './helpers';
 
 const readFileAsync = promisify(readFile);
 
@@ -57,11 +53,12 @@ describe('Request Crypto', () => {
 
   describe('Request Decryptor', () => {
     describe('Well Knowns', () => {
-      it('provides a list of well knowns signed with popKey', async () => {
+      it('provides a list of well knowns', async () => {
         const decryptor = await createRequestDecryptor(privateJWKS);
-        const wellKnowns = await decryptor.getWellKnowns(identity);
-        wellKnowns.keys.forEach((key: SignedPublicJWK) => {
-          expect(key).to.have.keys(signedPublicComponents);
+        const wellKnowns = await decryptor.getWellKnowns();
+        expect(wellKnowns.keys).to.have.length(1);
+        wellKnowns.keys.forEach((key: PublicJWK) => {
+          expect(key).to.have.keys(publicComponents);
         });
       });
     });
@@ -87,103 +84,26 @@ describe('Request Crypto', () => {
 
   describe('Request Encryptor', () => {
     let encryptor: Encryptor;
+    before(async () => {
+      encryptor = await createRequestEncryptor(publicJWKS);
+    })
+    it('fails to encrypt using unknown kid', async () => {
+      let errorMessage: string;
+      try {
+        const encryptionOutput = await encryptor.encrypt('missingKID', smallPayload);
+      } catch (err) {
+        errorMessage = err.toString();
+      }
+      expect(errorMessage).to.eql('Error: Missing kid (missingKID).');
+    });
 
-    it('creates new POP JWKS', async () => {
-      const emptyEncryptor = await createRequestEncryptor();
-      await emptyEncryptor.addPOPJWK();
-      const popJWKS = emptyEncryptor.getPrivatePOPJWKS();
-      expect(popJWKS).to.have.keys(['keys']);
-      popJWKS.keys.forEach((key: PrivateJWK) => {
-        expect(key).to.have.keys(privateComponents);
-      });
-    });
-    it('prepopulates pop JWKS', async () => {
-      encryptor = await createRequestEncryptor(privatePOPJWKS);
-      const popJWKS = encryptor.getPrivatePOPJWKS();
-      expect(popJWKS).to.eql(privatePOPJWKS);
-    });
-    it('gets POP JWK identity', () => {
-      const createdIdentity = encryptor.getIdentity();
-      expect(createdIdentity).to.eql(identity);
-    });
-    it('fails to encrypt using unkown kid', async () => {
-      let errorMessage: string;
-      try {
-        const encryptionOutput = await encryptor.verifyAndEncrypt(
-          smallPayload,
-          'missingKID',
-          publicJWKS
-        );
-      } catch (err) {
-        errorMessage = err.toString();
-      }
-      expect(errorMessage).to.eql('Error: Missing kid.');
-    });
-    it('fails on non-matching signature confirmation', async () => {
-      let errorMessage: string;
-      try {
-        const encryptionOutput = await encryptor.verifyAndEncrypt(
-          smallPayload,
-          'KIBANA_6.7',
-          mismatchPublicJWKS
-        );
-      } catch (err) {
-        errorMessage = err.toString();
-      }
-      expect(errorMessage).to.eql('Error: no key found');
-    });
-    it('fails on invalid signature confirmation', async () => {
-      let errorMessage: string;
-      const corruptedPublicJWKS = modifyJWKS(publicJWKS, (signedKey: SignedPublicJWK) => ({
-        ...signedKey,
-        cnf:
-          'eyJ6aXAiOiJERUYiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiUlNBLU9BRVAiLCJraWQiOiJFTlNmMndSRVhVVkM3OEgySk1fcDkxRWNZVWJCWTJ3QjZGVW92Q0pDVlJJIn0.Sy3j2gbqmVjLXnv8_4CSiKSZqwHnGMdkviZBRUesh058A1MgVZRoZyDaR7QSTRSGYilaYonLnudJQZ6X2DE8zNcdpH_eWTSU5olrr2izMKqr92EV4rNSOBNliYQAGAWB3UonoYJyiUVx0AFnHzxj0rbl86iz2ZTDlVAcGRuVVbs.FYkMyrY51VARUqC1CC26Qg.KknWxyyYGxw_dyw51u9rg6knpH5cKGVnAwdyMmoSzE3fO2XxFs-ku2JuQgzCxKJV.pdm5Z9GqyPBwPHcjZuKWTw',
-      }));
-
-      try {
-        const encryptionOutput = await encryptor.verifyAndEncrypt(
-          smallPayload,
-          'KIBANA_6.7',
-          corruptedPublicJWKS
-        );
-      } catch (err) {
-        errorMessage = err.toString();
-      }
-      expect(errorMessage).to.eql('Error: no key found');
-    });
-    it('fails on missing cnf', async () => {
-      let errorMessage: string;
-      const corruptedPublicJWKS = modifyJWKS(publicJWKS, (signedKey: SignedPublicJWK) => {
-        const { cnf, ...uJWK } = signedKey;
-        return uJWK;
-      });
-
-      try {
-        const encryptionOutput = await encryptor.verifyAndEncrypt(
-          smallPayload,
-          'KIBANA_6.7',
-          corruptedPublicJWKS as SignedPublicJWKS
-        );
-      } catch (err) {
-        errorMessage = err.toString();
-      }
-      expect(errorMessage).to.eql('Error: Invalid Confirmation Signature.');
-    });
     it('encrypts small payload', async () => {
-      const encryptionOutput = await encryptor.verifyAndEncrypt(
-        smallPayload,
-        'KIBANA_6.7',
-        publicJWKS
-      );
-
+      const encryptionOutput = await encryptor.encrypt('KIBANA_6.7', smallPayload);
       expect(encryptionOutput).to.have.keys('key', 'payload');
     });
+
     it('encrypts large payload', async () => {
-      const encryptionOutput = await encryptor.verifyAndEncrypt(
-        largePayload,
-        'KIBANA_6.7',
-        publicJWKS
-      );
+      const encryptionOutput = await encryptor.encrypt('KIBANA_6.7', largePayload);
       expect(encryptionOutput).to.have.keys('key', 'payload');
     });
   });

@@ -1,17 +1,7 @@
 import * as jose from 'node-jose';
 
-export interface JWKS<T = PublicJWK | PrivateJWK | SignedPublicJWK> {
+export interface JWKS<T = PublicJWK | PrivateJWK> {
   keys: T[];
-}
-
-export interface SignedPublicJWK extends PublicJWK {
-  // cnf: key confirmation to ensure integrity
-  cnf: string;
-}
-
-export interface SignedPrivateJWK extends PrivateJWK {
-  // cnf: key confirmation to ensure integrity
-  cnf: string;
 }
 
 export interface PublicJWK {
@@ -44,13 +34,13 @@ export interface PrivateJWK extends PublicJWK {
   qi: string;
 }
 
-export type KeyUse = 'pop' | 'sig' | 'enc' | 'desc';
+export type KeyUse = 'pop' | 'enc' | 'desc';
 export type PublicJWKS = JWKS<PublicJWK>;
-export type SignedPublicJWKS = JWKS<SignedPublicJWK>;
+
 export type PrivateJWKS = JWKS<PrivateJWK>;
-export type JWK = SignedPrivateJWK | PrivateJWK | SignedPublicJWK | PublicJWK;
+export type JWK = PrivateJWK | PublicJWK;
 export type UnsignedJWK = PrivateJWK | PublicJWK;
-export type SignedJWK = SignedPrivateJWK | SignedPublicJWK;
+
 
 export const RSA_ALGORITHM = 'RSA-OAEP';
 
@@ -71,8 +61,11 @@ export class JWKSManager {
   public async insertKey(jwk: JWK): Promise<void> {
     await this.store.add(jwk);
   }
-  public getKey(kid?: string): PublicJWK | PrivateJWK {
-    return this.store.get(kid);
+  public getPublicJWK(kid?: string): PublicJWK {
+    return this.getKey(kid).toJSON();
+  }
+  public getPrivateJWK(kid?: string): PrivateJWK {
+    return this.getKey(kid).toJSON(true);
   }
   public getPublicJWKS(): PublicJWKS {
     return this.store.toJSON();
@@ -84,9 +77,9 @@ export class JWKSManager {
     return this.store.remove(key);
   }
   public async encrypt(kid: string, input: Buffer): Promise<string> {
-    const publicJWK: PublicJWK = this.getKey(kid);
+    const publicJWK = this.getKey(kid);
     if (!publicJWK) {
-      throw Error('Missing kid.');
+      throw Error(`Missing kid (${kid}).`);
     }
     const encryptConfig = {
       format: 'compact',
@@ -101,6 +94,9 @@ export class JWKSManager {
     const decryptedPayload = await decrypter.decrypt(payload);
 
     return decryptedPayload.payload;
+  }
+  protected getKey(kid?: string): any {
+    return this.store.get(kid);
   }
 }
 

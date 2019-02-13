@@ -1,11 +1,8 @@
 import * as jose from 'node-jose';
-import { SignedPublicJWK } from '../src/index';
 import { createJWKManager, JWKManager } from '../src/jwk';
 
 import { privateJWKS } from './fixture/private_jwks';
-import { privatePOPJWKS } from './fixture/private_pop_jwks';
 import { publicJWKS } from './fixture/public_jwks';
-import { publicPOPKey } from './fixture/public_pop_jwks';
 
 const mockJWK = Object.assign({}, jose.JWK, {
   createKey(type: any, modulus: any, config: any) {
@@ -29,15 +26,8 @@ describe('JSON Web Keys Manager', () => {
     });
     it('prepopulates private key sets', async () => {
       const manager = await createJWKManager(privateJWKS, mockJWK);
-      const publicUJWKS = {
-        ...publicJWKS,
-        keys: publicJWKS.keys.map((key: SignedPublicJWK) => {
-          const { cnf, ...publicJWK } = key;
-          return publicJWK;
-        }),
-      };
       expect(manager.getPrivateJWKS()).to.eql(privateJWKS);
-      expect(manager.getPublicJWKS()).to.eql(publicUJWKS);
+      expect(manager.getPublicJWKS()).to.eql(publicJWKS);
     });
     it('adds a new key to the set', async () => {
       const manager = await createJWKManager(undefined, mockJWK);
