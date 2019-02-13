@@ -65,7 +65,7 @@ describe('Request Crypto', () => {
     describe('Decryption', async () => {
       it('decrypts small payload with private key', async () => {
         const decryptor = await createRequestDecryptor(privateJWKS);
-        const decryptedPayload = await decryptor.decryptPayload(
+        const decryptedPayload = await decryptor.decrypt(
           encryptedSmallPayload,
           encryptedKeyForSmall
         );
@@ -73,7 +73,7 @@ describe('Request Crypto', () => {
       });
       it('decrypts large payload with private key', async () => {
         const decryptor = await createRequestDecryptor(privateJWKS);
-        const decryptedPayload = await decryptor.decryptPayload(
+        const decryptedPayload = await decryptor.decrypt(
           encryptedLargePayload,
           encryptedKeyForLarge
         );
@@ -86,7 +86,8 @@ describe('Request Crypto', () => {
     let encryptor: Encryptor;
     before(async () => {
       encryptor = await createRequestEncryptor(publicJWKS);
-    })
+    });
+
     it('fails to encrypt using unknown kid', async () => {
       let errorMessage: string;
       try {

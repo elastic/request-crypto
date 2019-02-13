@@ -41,7 +41,6 @@ export type PrivateJWKS = JWKS<PrivateJWK>;
 export type JWK = PrivateJWK | PublicJWK;
 export type UnsignedJWK = PrivateJWK | PublicJWK;
 
-
 export const RSA_ALGORITHM = 'RSA-OAEP';
 
 export class JWKSManager {

@@ -15,7 +15,7 @@ export interface Encryptor {
 export interface Decryptor {
   getPublicComponent(kid: string): PublicJWK;
   getWellKnowns(): PublicJWKS;
-  decryptPayload(payload: string, encryptedAESKey: string): Promise<Buffer>;
+  decrypt(payload: string, encryptedAESKey: string): Promise<Buffer>;
 }
 
 export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<Encryptor> {
@@ -47,7 +47,7 @@ export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<
     getWellKnowns() {
       return jwkManager.getPublicJWKS();
     },
-    async decryptPayload(payload, encryptedAESKey) {
+    async decrypt(payload, encryptedAESKey) {
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
       const encryptionKey = encryptionKeyBuffer.toString('base64');
 
