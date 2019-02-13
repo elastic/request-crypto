@@ -60,11 +60,19 @@ export class JWKSManager {
   public async insertKey(jwk: JWK): Promise<void> {
     await this.store.add(jwk);
   }
-  public getPublicJWK(kid?: string): PublicJWK {
-    return this.getKey(kid).toJSON();
+  public getPublicJWK(kid?: string): PublicJWK | null {
+    const jwk = this.getKey(kid);
+    if (!jwk) {
+      return null;
+    }
+    return jwk.toJSON();
   }
-  public getPrivateJWK(kid?: string): PrivateJWK {
-    return this.getKey(kid).toJSON(true);
+  public getPrivateJWK(kid?: string): PrivateJWK | null {
+    const jwk = this.getKey(kid);
+    if (!jwk) {
+      return null;
+    }
+    return jwk.toJSON(true);
   }
   public getPublicJWKS(): PublicJWKS {
     return this.store.toJSON();
