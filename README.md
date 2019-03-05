@@ -23,7 +23,7 @@ There are 3 parts involved for JWK encryption:
    4. Sender sends the Mediator the AES encrypted payload and the JWK encrypted AES key.
 3. Mediator sends the enrypted payload and enrypted AES key to Receiver.
 4. Receiver gets the needed data from mediators
-   1. Receiver decrypts AES key using the corrisponsing public key's pair.
+   1. Receiver decrypts AES key using the corresponding public key's pair.
    2. Receiver decrypts payload with decrypted AES key.
    3. Receiver processes payload.
 
