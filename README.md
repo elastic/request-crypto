@@ -67,7 +67,7 @@ function TelemetryEndpointRoute(req, res) {
   
   try {
     const encryptedPaylaod = await requestEncryptor.encrypt(`kibana_${version}`, metrics);
-    res.end(encryptedPaylaod);
+    res.end(encryptedPayload);
   } catch(err) {
     res.status(500).end(`Error: ${err}`);
   }
