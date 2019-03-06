@@ -99,8 +99,7 @@ import privateJWKS from './privateJWKS';
 
 async function handler (event, context, callback) {
   const requestDecryptor = await createRequestDecryptor(privateJWKS);
-  const {payload, key} = event.body;
-  const decryptedPayload = await requestDecryptor.decryptPayload(payload, key);
+  const decryptedPayload = await requestDecryptor.decryptPayload(event.body);
 
   // ... handle payload
 }
