@@ -17,13 +17,13 @@ There are 3 parts involved for JWK encryption:
 
 1. Mediator Requests Sender for encrypted metrics
 2. Sender gathers metrics and encrypts them following these steps:
-   1. Sender encrypts data with a randomly Generate a 32-bytes AES passphrase.
+   1. Sender encrypts data with a randomly generated 32-bytes AES passphrase.
    2. Sender encrypts payload with a strong AES 256 bit key that is derived from the passphrase.
    3. Sender uses stored public JWK to encrypt the AES key with the selected JWK.
    4. Sender sends the Mediator the AES encrypted payload and the JWK encrypted AES key.
-3. Mediator sends the enrypted payload and enrypted AES key to Receiver.
+3. Mediator sends the encrypted payload and encrypted AES key to Receiver.
 4. Receiver gets the needed data from mediators
-   1. Receiver decrypts AES key using the corrisponsing public key's pair.
+   1. Receiver decrypts AES key using the corresponding public key's pair.
    2. Receiver decrypts payload with decrypted AES key.
    3. Receiver processes payload.
 
@@ -66,8 +66,8 @@ function TelemetryEndpointRoute(req, res) {
   const version = getKibanaVersion();
   
   try {
-    const encryptedPaylaod = await requestEncryptor.encrypt(`kibana_${version}`, metrics);
-    res.end(encryptedPaylaod);
+    const encryptedPayload = await requestEncryptor.encrypt(`kibana_${version}`, metrics);
+    res.end(encryptedPayload);
   } catch(err) {
     res.status(500).end(`Error: ${err}`);
   }
