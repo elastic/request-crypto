@@ -1,39 +1,30 @@
 import { makeAESCryptoWith } from './aes';
-import { createJWKManager } from './jwk';
+import { createJWKManager, ENC_MODULUS } from './jwk';
 import { PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
 import { generatePassphrase } from './random-bytes';
 
-export interface EncryptionOutput {
-  key: string;
-  payload: string;
-}
 
 export interface Encryptor {
-  encrypt(kid: string, input: any): Promise<EncryptionOutput>;
+  encrypt(kid: string, input: any): Promise<string>;
 }
 
 export interface Decryptor {
   getPublicComponent(kid: string): PublicJWK | null;
   getWellKnowns(): PublicJWKS;
-  decrypt(payload: string, encryptedAESKey: string): Promise<Buffer>;
+  decrypt(encryptedBody: string): Promise<Buffer>;
 }
 
 export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<Encryptor> {
   const jwkManager = await createJWKManager(publicJWKS);
   return {
     async encrypt(kid, input) {
-      const AESKey = generatePassphrase();
-      const AES = makeAESCryptoWith({ encryptionKey: AESKey });
+      const AESKeyBuffer = generatePassphrase();
+      const AES = makeAESCryptoWith({ encryptionKey: AESKeyBuffer });
       const encryptedPayload = await AES.encrypt(input);
-
-      const AESKeyBuffer = Buffer.from(AESKey, 'base64');
 
       const encryptedKey = await jwkManager.encrypt(kid, AESKeyBuffer);
 
-      return {
-        payload: encryptedPayload,
-        key: encryptedKey,
-      };
+      return packBody(encryptedKey, encryptedPayload);
     },
   };
 }
@@ -47,12 +38,26 @@ export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<
     getWellKnowns() {
       return jwkManager.getPublicJWKS();
     },
-    async decrypt(payload, encryptedAESKey) {
+    async decrypt(encryptedBody) {
+      const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
+
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
       const encryptionKey = encryptionKeyBuffer.toString('base64');
 
       const AES = makeAESCryptoWith({ encryptionKey });
-      return AES.decrypt(payload);
+      return AES.decrypt(encryptedPayload);
     },
+  };
+}
+
+export function packBody(encryptedAESKey: string, encryptedPayload: string) {
+  return `${encryptedAESKey}.${encryptedPayload}`;
+}
+
+export function unpackBody(encryptedBody: string) {
+  const [protectedKey, recipients, iv, ciphertext, tag, ...payload] = encryptedBody.split('.');
+  return {
+    encryptedAESKey: [protectedKey, recipients, iv, ciphertext, tag].join('.'),
+    encryptedPayload: payload.join('.'),
   };
 }

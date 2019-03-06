@@ -34,7 +34,7 @@ export interface PrivateJWK extends PublicJWK {
   qi: string;
 }
 
-export type KeyUse = 'pop' | 'enc' | 'desc';
+export type KeyUse =  'enc' | 'desc';
 export type PublicJWKS = JWKS<PublicJWK>;
 
 export type PrivateJWKS = JWKS<PrivateJWK>;

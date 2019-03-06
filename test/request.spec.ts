@@ -18,12 +18,10 @@ import { privateComponents, publicComponents } from './helpers';
 const readFileAsync = promisify(readFile);
 
 const largePayloadPath = path.join(__dirname, 'fixture/large_payload.json');
-const encryptedLargePayloadPath = path.join(__dirname, 'fixture/large_payload.base64.enc');
-const encryptedLargePayloadKeyPath = path.join(__dirname, 'fixture/large_payload_key.base64.enc');
+const encryptedLargePayloadPath = path.join(__dirname, 'fixture/large_payload.enc');
 
 const smallPayloadPath = path.join(__dirname, 'fixture/small_payload.json');
-const encryptedSmallPayloadPath = path.join(__dirname, 'fixture/small_payload.base64.enc');
-const encryptedSmallPayloadKeyPath = path.join(__dirname, 'fixture/small_payload_key.base64.enc');
+const encryptedSmallPayloadPath = path.join(__dirname, 'fixture/small_payload.enc');
 
 describe('Request Crypto', () => {
   function modifyJWKS<T>(jwks: JWKS<T>, modifier: any): JWKS<T> {
@@ -34,21 +32,17 @@ describe('Request Crypto', () => {
   }
 
   let smallPayload: Partial<object>;
-  let encryptedSmallPayload: string;
-  let encryptedKeyForSmall: string;
+  let encryptedBodyWithSmallPayload: string;
 
   let largePayload: Partial<object>;
-  let encryptedLargePayload: string;
-  let encryptedKeyForLarge: string;
+  let encryptedBodyWithLargePayload: string;
 
   before(async () => {
     smallPayload = JSON.parse(await readFileAsync(smallPayloadPath, 'utf-8'));
-    encryptedKeyForSmall = await readFileAsync(encryptedSmallPayloadKeyPath, 'utf-8');
-    encryptedSmallPayload = await readFileAsync(encryptedSmallPayloadPath, 'utf-8');
+    encryptedBodyWithSmallPayload = await readFileAsync(encryptedSmallPayloadPath, 'utf-8');
 
     largePayload = JSON.parse(await readFileAsync(largePayloadPath, 'utf-8'));
-    encryptedKeyForLarge = await readFileAsync(encryptedLargePayloadKeyPath, 'utf-8');
-    encryptedLargePayload = await readFileAsync(encryptedLargePayloadPath, 'utf-8');
+    encryptedBodyWithLargePayload = await readFileAsync(encryptedLargePayloadPath, 'utf-8');
   });
 
   describe('Request Decryptor', () => {
@@ -65,18 +59,12 @@ describe('Request Crypto', () => {
     describe('Decryption', async () => {
       it('decrypts small payload with private key', async () => {
         const decryptor = await createRequestDecryptor(privateJWKS);
-        const decryptedPayload = await decryptor.decrypt(
-          encryptedSmallPayload,
-          encryptedKeyForSmall
-        );
+        const decryptedPayload = await decryptor.decrypt(encryptedBodyWithSmallPayload);
         expect(decryptedPayload).to.eql(smallPayload);
       });
       it('decrypts large payload with private key', async () => {
         const decryptor = await createRequestDecryptor(privateJWKS);
-        const decryptedPayload = await decryptor.decrypt(
-          encryptedLargePayload,
-          encryptedKeyForLarge
-        );
+        const decryptedPayload = await decryptor.decrypt(encryptedBodyWithLargePayload);
         expect(decryptedPayload).to.eql(largePayload);
       });
     });
@@ -100,12 +88,12 @@ describe('Request Crypto', () => {
 
     it('encrypts small payload', async () => {
       const encryptionOutput = await encryptor.encrypt('KIBANA_6.7', smallPayload);
-      expect(encryptionOutput).to.have.keys('key', 'payload');
+      expect(encryptionOutput).to.be.a('string');
     });
 
     it('encrypts large payload', async () => {
       const encryptionOutput = await encryptor.encrypt('KIBANA_6.7', largePayload);
-      expect(encryptionOutput).to.have.keys('key', 'payload');
+      expect(encryptionOutput).to.be.a('string');
     });
   });
 });
