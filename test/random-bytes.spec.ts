@@ -11,6 +11,6 @@ describe('random-bytes', () => {
     it(`generates a passphrase with ${KEY_LENGTH_IN_BYTES} bytes length`, () => {
       const pass = generatePassphrase();
       expect(pass.length).to.equal(32);
-    })
+    });
   });
 });

@@ -1,8 +1,7 @@
 import { makeAESCryptoWith } from './aes';
-import { createJWKManager, ENC_MODULUS } from './jwk';
+import { createJWKManager } from './jwk';
 import { PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
 import { generatePassphrase } from './random-bytes';
-
 
 export interface Encryptor {
   encrypt(kid: string, input: any): Promise<string>;
