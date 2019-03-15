@@ -1,7 +1,7 @@
 import * as jose from 'node-jose';
 import { createJWKS, JWKS, JWKSManager } from './jwks';
 
-export const ENC_MODULUS = 4096;
+export const ENC_MODULUS = 2048;
 
 export class JWKManager extends JWKSManager {
   public addKey(kid: string) {
