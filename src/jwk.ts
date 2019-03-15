@@ -1,6 +1,7 @@
 import * as jose from 'node-jose';
 
-export const ENC_MODULUS = 2048;
+// export const ENC_MODULUS = 2048;
+export const ENC_MODULUS = 4096;
 
 import { createJWKS, JWKS, JWKSManager } from './jwks';
 

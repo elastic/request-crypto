@@ -5,6 +5,7 @@
     "declaration": false,
     "target": "es6",
     "moduleResolution": "node",
+    "resolveJsonModule": true,
     "baseUrl": ".",
     "lib": [
       "es6",

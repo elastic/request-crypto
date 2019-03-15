@@ -31,7 +31,7 @@ describe('JSON Web Keys Manager', () => {
     });
     it('adds a new key to the set', async () => {
       const manager = await createJWKManager(undefined, mockJWK);
-      await manager.addKey('KIBANA_7.0');
+      await manager.addKey('KIBANA_2');
       const { keys } = manager.getPrivateJWKS();
       expect(keys).to.have.length(1);
     });
@@ -44,7 +44,7 @@ describe('JSON Web Keys Manager', () => {
 
     it('encrypts Buffer input with public key set', async () => {
       const manager = await createJWKManager(publicJWKS, mockJWK);
-      encryptedMessage = await manager.encrypt('KIBANA_6.7', inputBuffer);
+      encryptedMessage = await manager.encrypt('KIBANA', inputBuffer);
       expect(encryptedMessage).to.be.a('string');
     });
     it('cannot decrypt messages using public key set', async () => {

@@ -1,3 +1,4 @@
+import { util } from 'node-jose';
 import { makeAESCryptoWith } from './aes';
 import { createJWKManager } from './jwk';
 import { PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
@@ -20,9 +21,7 @@ export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<En
       const AESKeyBuffer = generatePassphrase();
       const AES = makeAESCryptoWith({ encryptionKey: AESKeyBuffer });
       const encryptedPayload = await AES.encrypt(input);
-
       const encryptedKey = await jwkManager.encrypt(kid, AESKeyBuffer);
-
       return packBody(encryptedKey, encryptedPayload);
     },
   };
@@ -39,24 +38,23 @@ export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<
     },
     async decrypt(encryptedBody) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
-
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
-      const encryptionKey = encryptionKeyBuffer.toString('base64');
-
-      const AES = makeAESCryptoWith({ encryptionKey });
+      const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer });
       return AES.decrypt(encryptedPayload);
     },
   };
 }
 
-export function packBody(encryptedAESKey: string, encryptedPayload: string) {
-  return `${encryptedAESKey}.${encryptedPayload}`;
+export function packBody(encryptedAESKey: string, encryptedPayload: string): string {
+  const packedBodyStringifiedJSON = JSON.stringify({
+    encryptedAESKey,
+    encryptedPayload,
+  });
+  return util.base64url.encode(packedBodyStringifiedJSON, 'utf8');
 }
 
-export function unpackBody(encryptedBody: string) {
-  const [protectedKey, recipients, iv, ciphertext, tag, ...payload] = encryptedBody.split('.');
-  return {
-    encryptedAESKey: [protectedKey, recipients, iv, ciphertext, tag].join('.'),
-    encryptedPayload: payload.join('.'),
-  };
+export function unpackBody(packedBody: string) {
+  const decodedBody: Buffer = util.base64url.decode(packedBody);
+  const { encryptedAESKey, encryptedPayload } = JSON.parse(decodedBody.toString('utf8'));
+  return { encryptedAESKey, encryptedPayload };
 }
