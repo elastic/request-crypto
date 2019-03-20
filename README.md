@@ -19,7 +19,7 @@ There are 3 parts involved for JWK encryption:
 2. Sender gathers metrics and encrypts them following these steps:
    1. Sender encrypts data with a randomly generated 32-bytes AES passphrase.
    2. Sender encrypts payload with a strong AES 256 bit key that is derived from the passphrase.
-   3. Sender uses stored public JWK to encrypt the AES key with the selected JWK.
+   3. Sender uses public RSA key that is shipped with Kibana to encrypt the AES key.
    4. Sender sends the Mediator the AES encrypted payload and the JWK encrypted AES key.
 3. Mediator sends the encrypted payload and encrypted AES key to Receiver.
 4. Receiver gets the needed data from mediators
