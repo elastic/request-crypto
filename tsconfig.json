@@ -14,9 +14,8 @@
     "baseUrl": ".",
     "rootDir": "./src",
     "lib": [
-      "ES6",
-      "ES2015",
-      "ES2017.object"
+      "es6",
+      "es2017.object"
     ]
   },
   "include": [
