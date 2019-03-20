@@ -54,8 +54,8 @@ export class JWKSManager {
   }
   public async addKey(kid: string | undefined, modulus: number, use: KeyUse): Promise<void> {
     const keyConfig = { alg: RSA_ALGORITHM, use, kid };
-    const privatePOPKey = await this.JWK.createKey('RSA', modulus, keyConfig);
-    await this.insertKey(privatePOPKey);
+    const privateKey = await this.JWK.createKey('RSA', modulus, keyConfig);
+    await this.insertKey(privateKey);
   }
   public async insertKey(jwk: JWK): Promise<void> {
     await this.store.add(jwk);
