@@ -1,3 +1,4 @@
+// @ts-ignore
 import { util } from 'node-jose';
 import { makeAESCryptoWith } from './aes';
 import { createJWKManager } from './jwk';

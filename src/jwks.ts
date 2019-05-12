@@ -1,3 +1,4 @@
+// @ts-ignore
 import * as jose from 'node-jose';
 
 export interface JWKS<T = PublicJWK | PrivateJWK> {
@@ -45,7 +46,7 @@ export const RSA_ALGORITHM = 'RSA-OAEP';
 
 export class JWKSManager {
   public store: any;
-  public JWK: jose.JWK;
+  public JWK: typeof jose.JWK;
   public JWE: jose.JWE;
   constructor(store: any, jwk = jose.JWK, jwe = jose.JWE) {
     this.store = store;
