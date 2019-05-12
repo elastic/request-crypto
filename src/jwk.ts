@@ -1,4 +1,3 @@
-// @ts-ignore
 import * as jose from 'node-jose';
 import { createJWKS, JWKS, JWKSManager } from './jwks';
 

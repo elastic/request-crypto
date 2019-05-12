@@ -55,7 +55,7 @@ export function packBody(encryptedAESKey: string, encryptedPayload: string): str
 }
 
 export function unpackBody(packedBody: string) {
-  const decodedBody: Buffer = util.base64url.decode(packedBody);
+  const decodedBody = (util.base64url.decode(packedBody) as unknown) as Buffer;
   const { encryptedAESKey, encryptedPayload } = JSON.parse(decodedBody.toString('utf8'));
   return { encryptedAESKey, encryptedPayload };
 }
