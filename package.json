@@ -1,6 +1,6 @@
 {
   "name": "@elastic/request-crypto",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Request Cryptography",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@elastic/node-crypto": "^0.1.2",
+    "@types/node-jose": "1.1.0",
     "node-jose": "1.1.0"
   }
 }

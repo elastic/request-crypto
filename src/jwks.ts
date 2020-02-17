@@ -45,8 +45,8 @@ export const RSA_ALGORITHM = 'RSA-OAEP';
 
 export class JWKSManager {
   public store: any;
-  public JWK: jose.JWK;
-  public JWE: jose.JWE;
+  public JWK: typeof jose.JWK;
+  public JWE: typeof jose.JWE;
   constructor(store: any, jwk = jose.JWK, jwe = jose.JWE) {
     this.store = store;
     this.JWK = jwk;
@@ -57,7 +57,7 @@ export class JWKSManager {
     const privateKey = await this.JWK.createKey('RSA', modulus, keyConfig);
     await this.insertKey(privateKey);
   }
-  public async insertKey(jwk: JWK): Promise<void> {
+  public async insertKey(jwk: jose.JWK.Key): Promise<void> {
     await this.store.add(jwk);
   }
   public getPublicJWK(kid?: string): PublicJWK | null {
@@ -88,28 +88,27 @@ export class JWKSManager {
     if (!publicJWK) {
       throw Error(`Missing kid (${kid}).`);
     }
-    const encryptConfig = {
-      format: 'compact',
-      zip: true,
-    };
-    const encrypter = this.JWE.createEncrypt(encryptConfig, publicJWK);
 
-    return encrypter.update(input).final();
+    return this.JWE.createEncrypt({ format: 'compact', zip: true }, publicJWK)
+      .update(input)
+      .final();
   }
-  public async decrypt(payload: any, jwks: PrivateJWKS = this.store): Promise<Buffer> {
+  public async decrypt(payload: any, jwks = this.store): Promise<Buffer> {
     const decrypter = this.JWE.createDecrypt(jwks);
     const decryptedPayload = await decrypter.decrypt(payload);
 
-    return decryptedPayload.payload;
+    return (decryptedPayload as any).payload;
   }
   protected getKey(kid?: string): any {
     return this.store.get(kid);
   }
 }
 
-export async function createJWKS(jwk: jose.JWK, jwks?: JWKS): Promise<any> {
-  const storeMethod = jwks ? 'asKeyStore' : 'createKeyStore';
-  return jwk[storeMethod](jwks);
+export async function createJWKS(jwk: typeof jose.JWK, jwks?: JWKS): Promise<any> {
+  if (jwks) {
+    return jwk.asKeyStore(jwks);
+  }
+  return jwk.createKeyStore();
 }
 
 export async function createJWKSManager(jwks?: JWKS) {
