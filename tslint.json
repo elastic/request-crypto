@@ -19,5 +19,11 @@
     },
     "rulesDirectory": [
       "tslint-plugin-prettier"
-    ]
+    ],
+    "linterOptions": {
+      "exclude": [
+        "*.json",
+        "**/*.json"
+      ]
+    }
 }
