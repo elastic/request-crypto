@@ -1,6 +1,6 @@
-// @ts-ignore
+import makeAESCryptoWith, { EncryptOutput } from '@elastic/node-crypto';
 import { util } from 'node-jose';
-import { makeAESCryptoWith } from './aes';
+
 import { createJWKManager } from './jwk';
 import { PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
 import { generatePassphrase } from './random-bytes';
@@ -12,7 +12,7 @@ export interface Encryptor {
 export interface Decryptor {
   getPublicComponent(kid: string): PublicJWK | null;
   getWellKnowns(): PublicJWKS;
-  decrypt(encryptedBody: string): Promise<Buffer>;
+  decrypt(encryptedBody: string): Promise<EncryptOutput | EncryptOutput[]>;
 }
 
 export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<Encryptor> {
@@ -20,7 +20,7 @@ export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<En
   return {
     async encrypt(kid, input) {
       const AESKeyBuffer = generatePassphrase();
-      const AES = makeAESCryptoWith({ encryptionKey: AESKeyBuffer });
+      const AES = makeAESCryptoWith({ encryptionKey: AESKeyBuffer.toString() });
       const encryptedPayload = await AES.encrypt(input);
       const encryptedKey = await jwkManager.encrypt(kid, AESKeyBuffer);
       return packBody(encryptedKey, encryptedPayload);
@@ -31,16 +31,16 @@ export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<En
 export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<Decryptor> {
   const jwkManager = await createJWKManager(privateJWKS);
   return {
-    getPublicComponent(kid) {
+    getPublicComponent(kid: string) {
       return jwkManager.getPublicJWK(kid);
     },
     getWellKnowns() {
       return jwkManager.getPublicJWKS();
     },
-    async decrypt(encryptedBody) {
+    async decrypt(encryptedBody: string) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
-      const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer });
+      const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer.toString() });
       return AES.decrypt(encryptedPayload);
     },
   };
