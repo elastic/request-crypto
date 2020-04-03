@@ -1,4 +1,4 @@
-import makeAESCryptoWith, { Crypto } from '@elastic/node-crypto';
+import makeAESCryptoWith, { EncryptOutput } from '@elastic/node-crypto';
 import { util } from 'node-jose';
 
 import { createJWKManager } from './jwk';
@@ -12,7 +12,7 @@ export interface Encryptor {
 export interface Decryptor {
   getPublicComponent(kid: string): PublicJWK | null;
   getWellKnowns(): PublicJWKS;
-  decrypt(encryptedBody: string): ReturnType<Crypto['decrypt']>;
+  decrypt(encryptedBody: string): Promise<EncryptOutput | EncryptOutput[]>;
 }
 
 export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<Encryptor> {
@@ -31,13 +31,13 @@ export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<En
 export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<Decryptor> {
   const jwkManager = await createJWKManager(privateJWKS);
   return {
-    getPublicComponent(kid) {
+    getPublicComponent(kid: string) {
       return jwkManager.getPublicJWK(kid);
     },
     getWellKnowns() {
       return jwkManager.getPublicJWKS();
     },
-    async decrypt(encryptedBody) {
+    async decrypt(encryptedBody: string) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
       const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer.toString() });
