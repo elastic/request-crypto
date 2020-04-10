@@ -40,7 +40,6 @@ export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<
     async decrypt(encryptedBody: string) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
-      console.log('encryptionKeyBuffer::', encryptionKeyBuffer.toString());
       const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer });
       return AES.decrypt(encryptedPayload);
     },
