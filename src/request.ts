@@ -20,7 +20,7 @@ export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<En
   return {
     async encrypt(kid, input) {
       const AESKeyBuffer = generatePassphrase();
-      const AES = makeAESCryptoWith({ encryptionKey: AESKeyBuffer.toString() });
+      const AES = makeAESCryptoWith({ encryptionKey: AESKeyBuffer });
       const encryptedPayload = await AES.encrypt(input);
       const encryptedKey = await jwkManager.encrypt(kid, AESKeyBuffer);
       return packBody(encryptedKey, encryptedPayload);
@@ -40,7 +40,7 @@ export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<
     async decrypt(encryptedBody: string) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
       const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
-      const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer.toString() });
+      const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer });
       return AES.decrypt(encryptedPayload);
     },
   };
