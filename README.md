@@ -150,7 +150,7 @@ import privateJWKS from './privateJWKS';
 
 async function handler (event, context, callback) {
   const requestDecryptor = await createRequestDecryptor(privateJWKS);
-  const decryptedPayload = await requestDecryptor.getJWKMetadata(event.body);
+  const jwkMetadata = await requestDecryptor.getJWKMetadata(event.body);
 
   // ... use metadata
 }
