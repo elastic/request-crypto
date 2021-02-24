@@ -2,7 +2,7 @@ import makeAESCryptoWith, { EncryptOutput } from '@elastic/node-crypto';
 import { util } from 'node-jose';
 
 import { createJWKManager } from './jwk';
-import { PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
+import { JWKDecryptResult, PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
 import { generatePassphrase } from './random-bytes';
 
 export interface Encryptor {
@@ -13,6 +13,9 @@ export interface Decryptor {
   getPublicComponent(kid: string): PublicJWK | null;
   getWellKnowns(): PublicJWKS;
   decrypt(encryptedBody: string): Promise<EncryptOutput | EncryptOutput[]>;
+  getJWKMetadata(
+    encryptedBody: string
+  ): Promise<Pick<JWKDecryptResult, 'key' | 'protected' | 'header'>>;
 }
 
 export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<Encryptor> {
@@ -39,9 +42,14 @@ export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<
     },
     async decrypt(encryptedBody: string) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
-      const encryptionKeyBuffer = await jwkManager.decrypt(encryptedAESKey);
+      const { payload: encryptionKeyBuffer } = await jwkManager.decrypt(encryptedAESKey);
       const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer });
       return AES.decrypt(encryptedPayload);
+    },
+    async getJWKMetadata(encryptedBody: string) {
+      const { encryptedAESKey } = unpackBody(encryptedBody);
+      const { key, protected: protectedFields, header } = await jwkManager.decrypt(encryptedAESKey);
+      return { key, protected: protectedFields, header };
     },
   };
 }

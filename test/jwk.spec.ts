@@ -1,5 +1,5 @@
 import * as jose from 'node-jose';
-import { createJWKManager, JWKManager } from '../src/jwk';
+import { createJWKManager } from '../src/jwk';
 
 import { privateJWKS } from './fixture/private_jwks';
 import { publicJWKS } from './fixture/public_jwks';
@@ -59,9 +59,31 @@ describe('JSON Web Keys Manager', () => {
     });
     it('decrypts messages using private key set', async () => {
       const manager = await createJWKManager(privateJWKS, mockJWK);
-      const messageBuffer = await manager.decrypt(encryptedMessage);
+      const { payload: messageBuffer } = await manager.decrypt(encryptedMessage);
       const messageObject = messageBuffer.toString();
       expect(messageObject).to.equal(originalInput);
+    });
+    it('returns JWKDecryptResult contract', async () => {
+      const manager = await createJWKManager(privateJWKS, mockJWK);
+      const jwkDecryptResult = await manager.decrypt(encryptedMessage);
+      expect(jwkDecryptResult.header).to.eql({
+        zip: 'DEF',
+        enc: 'A128CBC-HS256',
+        alg: 'RSA-OAEP',
+        kid: 'KIBANA',
+      });
+      expect(jwkDecryptResult.protected).to.eql(['zip', 'enc', 'alg', 'kid']);
+      expect(Buffer.isBuffer(jwkDecryptResult.plaintext)).to.equal(true);
+      expect(Buffer.isBuffer(jwkDecryptResult.payload)).to.equal(true);
+      const { kty, kid, use, alg } = manager.getPublicJWK('KIBANA');
+      expect(jwkDecryptResult.key).to.eql({
+        kty,
+        kid,
+        use,
+        alg,
+        length: 1024,
+        keystore: {},
+      });
     });
     it('cannot decrypt messages not encrypted with matching keys', async () => {
       const unworldlyManager = await createJWKManager(undefined, mockJWK);
