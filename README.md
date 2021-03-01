@@ -135,6 +135,29 @@ jwksManager.getPublicJWKS();
 jwksManager.getPrivateJWKS();
 ```
 
+### Getting JWK metadata from request
+
+The method `getJWKMetadata` returns the metadata of the JWK used to encrypt the request body.
+
+The metadata is an object including the following:
+- `key`: JWK details (`kid`, `length`, `kty`, `use`, `alg`)
+- `protected` an array of the member names from the "protected" member.
+- `header`: an object of "protected" member key values.
+
+```js
+import { createRequestDecryptor } from '@elastic/request-crypto';
+import privateJWKS from './privateJWKS';
+
+async function handler (event, context, callback) {
+  const requestDecryptor = await createRequestDecryptor(privateJWKS);
+  const jwkMetadata = await requestDecryptor.getJWKMetadata(event.body);
+
+  // ... use metadata
+}
+```
+
+If the key is not in the provided JWKS the function will throw an error `Error: no key found`.
+
 ### RFCs followed for implementation details
 
 - JWK RFC: https://tools.ietf.org/html/rfc7517

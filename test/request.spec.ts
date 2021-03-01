@@ -1,15 +1,12 @@
-import { readFile } from 'fs';
-import * as path from 'path';
-import { promisify } from 'util';
-
 import { createRequestDecryptor, createRequestEncryptor } from '../src/request';
 
 import { privateJWKS } from './fixture/private_jwks';
 import { publicJWKS } from './fixture/public_jwks';
 
-import { JWKS, PublicJWK } from '../src';
+import { PublicJWK } from '../src';
 import { publicComponents } from './helpers';
 
+import { encryptedRequest } from './fixture/encrypted_jwk';
 import * as largePayload from './fixture/large_payload.json';
 import * as smallPayload from './fixture/small_payload.json';
 
@@ -53,7 +50,7 @@ describe('Request Crypto', () => {
     });
   });
 
-  describe('Request Decryption', async () => {
+  describe('Request Decryption', () => {
     it('decrypts small payload with private key', async () => {
       const decryptor = await createRequestDecryptor(privateJWKS);
       const decryptedPayload = await decryptor.decrypt(encryptedBodyWithSmallPayload);
@@ -63,6 +60,27 @@ describe('Request Crypto', () => {
       const decryptor = await createRequestDecryptor(privateJWKS);
       const decryptedPayload = await decryptor.decrypt(encryptedBodyWithLargePayload);
       expect(decryptedPayload).to.eql(largePayload);
+    });
+  });
+
+  describe('Request getJWKMetadata', () => {
+    it('returns jwk metadata from request payload', async () => {
+      const decryptor = await createRequestDecryptor(privateJWKS);
+      const jwkMetadata = await decryptor.getJWKMetadata(encryptedBodyWithLargePayload);
+      expect(jwkMetadata.protected).to.eql(['zip', 'enc', 'alg', 'kid']);
+      expect(Object.keys(jwkMetadata.header)).to.eql(jwkMetadata.protected);
+      expect(jwkMetadata.key.kid).to.eql('KIBANA');
+    });
+
+    it('fails to grab metadata of unknown JWK', async () => {
+      const decryptor = await createRequestDecryptor(privateJWKS);
+      let errorMessage = '';
+      try {
+        await decryptor.getJWKMetadata(encryptedRequest.encryptedPayload);
+      } catch (err) {
+        errorMessage = err.toString();
+      }
+      expect(errorMessage).to.equal('Error: no key found');
     });
   });
 });
