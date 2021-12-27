@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@elastic/node-crypto": "1.1.1",
-    "@types/node-jose": "1.1.0",
-    "node-jose": "1.1.0"
+    "@types/node-jose": "1.1.8",
+    "node-jose": "2.0.0"
   }
 }
