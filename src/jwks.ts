@@ -45,7 +45,7 @@ export type UnsignedJWK = PrivateJWK | PublicJWK;
 
 export const RSA_ALGORITHM = 'RSA-OAEP';
 
-export interface JWKDecryptResult extends jose.JWE.DecryptResult {
+export interface JWKDecryptResult extends Omit<jose.JWE.DecryptResult, 'key' | 'header'> {
   /**
    * JWK metadata
    */
@@ -112,8 +112,7 @@ export class JWKSManager {
   }
   public async decrypt(payload: any, jwks = this.store): Promise<JWKDecryptResult> {
     const decrypter = this.JWE.createDecrypt(jwks);
-    const decryptedPayload = (await decrypter.decrypt(payload)) as JWKDecryptResult;
-    return decryptedPayload;
+    return (await decrypter.decrypt(payload)) as JWKDecryptResult;
   }
 
   protected getKey(kid?: string): any {
