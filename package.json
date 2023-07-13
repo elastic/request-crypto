@@ -41,6 +41,6 @@
   "dependencies": {
     "@elastic/node-crypto": "1.1.1",
     "@types/node-jose": "1.1.10",
-    "node-jose": "2.1.0"
+    "node-jose": "2.2.0"
   }
 }
