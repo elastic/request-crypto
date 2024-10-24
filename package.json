@@ -1,10 +1,13 @@
 {
   "name": "@elastic/request-crypto",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "description": "Request Cryptography",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
-  "repository": "elastic/request-crypto",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/request-crypto.git"
+  },
   "scripts": {
     "prepare": "npm run clean && npm run lint && npm run test && npm run build",
     "test": "cross-env TS_NODE_FILES=true TS_NODE_PROJECT=./test/tsconfig.json mocha -r ts-node/register test/setup.ts 'test/**/*.spec.ts'",
