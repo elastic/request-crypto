@@ -45,5 +45,8 @@
     "@elastic/node-crypto": "^1.2.3",
     "@types/node-jose": "1.1.10",
     "node-jose": "2.2.0"
+  },
+  "resolutions": {
+    "node-jose/uuid": "^11.1.1"
   }
 }
