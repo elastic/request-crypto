@@ -1,3 +1,4 @@
+import { createJWKSManager } from '../src/jwks';
 import { createRequestDecryptor, createRequestEncryptor } from '../src/request';
 
 import { privateJWKS } from './fixture/private_jwks';
@@ -81,6 +82,40 @@ describe('Request Crypto', () => {
         errorMessage = err.toString();
       }
       expect(errorMessage).to.equal('Error: no key found');
+    });
+  });
+
+  describe('getPublicComponent', () => {
+    it('returns public JWK for known kid', async () => {
+      const decryptor = await createRequestDecryptor(privateJWKS);
+      const jwk = decryptor.getPublicComponent('KIBANA');
+      expect(jwk).to.not.equal(null);
+      expect(Object.keys(jwk)).to.eql(publicComponents);
+    });
+
+    it('returns null for unknown kid', async () => {
+      const decryptor = await createRequestDecryptor(privateJWKS);
+      expect(decryptor.getPublicComponent('MISSING')).to.equal(null);
+    });
+
+    it('never exposes private members', async () => {
+      const decryptor = await createRequestDecryptor(privateJWKS);
+      const jwk = decryptor.getPublicComponent('KIBANA') as any;
+      expect(jwk.d).to.equal(undefined);
+    });
+  });
+
+  describe('2048-bit end-to-end round-trip', () => {
+    it('encrypts and decrypts with a 2048-bit key', async () => {
+      const manager = await createJWKSManager();
+      await manager.addKey('K2048', 2048, 'enc');
+      const pub = manager.getPublicJWKS();
+      const priv = manager.getPrivateJWKS();
+      const encryptor = await createRequestEncryptor(pub);
+      const decryptor = await createRequestDecryptor(priv);
+      const encrypted = await encryptor.encrypt('K2048', smallPayload);
+      const decrypted = await decryptor.decrypt(encrypted);
+      expect(decrypted).to.eql(smallPayload);
     });
   });
 });

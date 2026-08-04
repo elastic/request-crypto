@@ -1,5 +1,4 @@
-import * as jose from 'node-jose';
-import { createJWKS, JWKS, JWKSManager } from './jwks';
+import { createJWKS, JWKS, JWKSManager, JWKSManagerOptions } from './jwks';
 
 export const ENC_MODULUS = 2048;
 
@@ -9,7 +8,7 @@ export class JWKManager extends JWKSManager {
   }
 }
 
-export async function createJWKManager(jwks?: JWKS, jwk = jose.JWK) {
-  const store = await createJWKS(jwk, jwks);
-  return new JWKManager(store, jwk);
+export async function createJWKManager(jwks?: JWKS, options?: JWKSManagerOptions) {
+  const store = await createJWKS(jwks);
+  return new JWKManager(store, options);
 }

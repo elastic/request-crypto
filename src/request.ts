@@ -1,8 +1,7 @@
 import makeAESCryptoWith, { EncryptOutput } from '@elastic/node-crypto';
-import { util } from 'node-jose';
 
 import { createJWKManager } from './jwk';
-import { JWKDecryptResult, PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
+import { JWKDecryptResult, JWKSManagerOptions, PrivateJWKS, PublicJWK, PublicJWKS } from './jwks';
 import { generatePassphrase } from './random-bytes';
 
 export interface Encryptor {
@@ -31,8 +30,11 @@ export async function createRequestEncryptor(publicJWKS: PublicJWKS): Promise<En
   };
 }
 
-export async function createRequestDecryptor(privateJWKS: PrivateJWKS): Promise<Decryptor> {
-  const jwkManager = await createJWKManager(privateJWKS);
+export async function createRequestDecryptor(
+  privateJWKS: PrivateJWKS,
+  options?: JWKSManagerOptions
+): Promise<Decryptor> {
+  const jwkManager = await createJWKManager(privateJWKS, options);
   return {
     getPublicComponent(kid: string) {
       return jwkManager.getPublicJWK(kid);
@@ -59,11 +61,11 @@ export function packBody(encryptedAESKey: string, encryptedPayload: string): str
     encryptedAESKey,
     encryptedPayload,
   });
-  return util.base64url.encode(packedBodyStringifiedJSON, 'utf8');
+  return Buffer.from(packedBodyStringifiedJSON, 'utf8').toString('base64url');
 }
 
 export function unpackBody(packedBody: string) {
-  const decodedBody = (util.base64url.decode(packedBody) as unknown) as Buffer;
+  const decodedBody = Buffer.from(packedBody, 'base64url');
   const { encryptedAESKey, encryptedPayload } = JSON.parse(decodedBody.toString('utf8'));
   return { encryptedAESKey, encryptedPayload };
 }

@@ -158,8 +158,57 @@ async function handler (event, context, callback) {
 
 If the key is not in the provided JWKS the function will throw an error `Error: no key found`.
 
+### Removing a key
+
+Pass the JWK object (must have a `kid` field) to `removeKey`. All keys with the matching `kid` are
+removed; unknown `kid` values are silently ignored.
+
+```js
+jwksManager.removeKey(jwksManager.getPublicJWK('kibana1'));
+```
+
+### Supported cryptographic profile
+
+| Parameter | Value |
+|---|---|
+| Key wrap algorithm (`alg`) | `RSA-OAEP` — RSAES-OAEP with SHA-1 and MGF1-SHA-1 |
+| Content encryption (`enc`) | `A128CBC-HS256` — AES-128-CBC + HMAC-SHA-256 |
+| Compression (`zip`) | `DEF` (raw DEFLATE per RFC 1951) or absent |
+| Serialization | JWE compact (5 Base64url segments) |
+
+Tokens produced by earlier versions (node-jose) and tokens produced by 3.x are byte-compatible in
+both directions. No re-encryption or coordinated upgrade is required.
+
+### Decompression limit (`maxDecompressedSize`)
+
+By default the decryptor rejects any token whose inflated plaintext exceeds **250,000 bytes**. This
+protects against decompression-bomb payloads (CVE-2024-28176 class). The request encryption path
+never produces plaintexts above a few kilobytes, so the default gives roughly 7,800× headroom.
+
+If you hold historical tokens whose plaintext exceeds the default — for example because an earlier
+version of the library encrypted a large buffer directly through `JWKSManager.encrypt()` — raise
+the limit at construction time:
+
+```js
+import { createRequestDecryptor } from '@elastic/request-crypto';
+
+const decryptor = await createRequestDecryptor(privateJWKS, {
+  maxDecompressedSize: 500_000,  // bytes; must be a positive finite number
+});
+```
+
+The same option is accepted by `createJWKManager`, `createJWKSManager`, and the `JWKSManager`
+constructor.
+
+### Requirements
+
+Node.js ≥ 16 (uses `crypto.createPublicKey({format:'jwk'})` introduced in Node 15.12 and
+`Buffer` `'base64url'` encoding introduced in Node 15.7 / 14.18).
+
 ### RFCs followed for implementation details
 
 - JWK RFC: https://tools.ietf.org/html/rfc7517
 - JWKS RFC: https://tools.ietf.org/html/rfc7517#appendix-A
+- JWE RFC: https://tools.ietf.org/html/rfc7516
+- JWA RFC: https://tools.ietf.org/html/rfc7518
 - PKCS RFC: https://tools.ietf.org/html/rfc3447
