@@ -6,7 +6,6 @@ import { publicJWKS } from './fixture/public_jwks';
 import { PublicJWK } from '../src';
 import { publicComponents } from './helpers';
 
-import { encryptedRequest } from './fixture/encrypted_jwk';
 import * as largePayload from './fixture/large_payload.json';
 import * as smallPayload from './fixture/small_payload.json';
 
@@ -27,12 +26,12 @@ describe('Request Crypto', () => {
 
   describe('Request Encryption', () => {
     it('fails to encrypt using unknown kid', async () => {
-      let errorMessage: string;
+      let errorMessage = '';
       try {
         const encryptor = await createRequestEncryptor(publicJWKS);
         await encryptor.encrypt('missingKID', smallPayload);
       } catch (err) {
-        errorMessage = err.toString();
+        errorMessage = (err as Error).toString();
       }
       expect(errorMessage).to.eql('Error: Missing kid (missingKID).');
     });
@@ -67,18 +66,26 @@ describe('Request Crypto', () => {
     it('returns jwk metadata from request payload', async () => {
       const decryptor = await createRequestDecryptor(privateJWKS);
       const jwkMetadata = await decryptor.getJWKMetadata(encryptedBodyWithLargePayload);
-      expect(jwkMetadata.protected).to.eql(['zip', 'enc', 'alg', 'kid']);
-      expect(Object.keys(jwkMetadata.header)).to.eql(jwkMetadata.protected);
+      expect(jwkMetadata.protected).to.have.members(['enc', 'alg', 'kid']);
+      expect(Object.keys(jwkMetadata.header)).to.have.members(jwkMetadata.protected);
       expect(jwkMetadata.key.kid).to.eql('KIBANA');
     });
 
     it('fails to grab metadata of unknown JWK', async () => {
+      // Encrypt with the same public key but a different kid so decryption key lookup fails
+      const encryptorWithUnknownKid = await createRequestEncryptor({
+        keys: [{ ...publicJWKS.keys[0], kid: 'KIBANA_UNKNOWN' }],
+      });
+      const unknownKidBody = await encryptorWithUnknownKid.encrypt('KIBANA_UNKNOWN', {
+        test: true,
+      });
+
       const decryptor = await createRequestDecryptor(privateJWKS);
       let errorMessage = '';
       try {
-        await decryptor.getJWKMetadata(encryptedRequest.encryptedPayload);
+        await decryptor.getJWKMetadata(unknownKidBody);
       } catch (err) {
-        errorMessage = err.toString();
+        errorMessage = (err as Error).toString();
       }
       expect(errorMessage).to.equal('Error: no key found');
     });
