@@ -8,6 +8,19 @@
   <a href="https://badge.fury.io/js/%40elastic%2Frequest-crypto"><img src="https://badge.fury.io/js/%40elastic%2Frequest-crypto.svg" alt="npm version" height="18"></a>
 </p>
 
+> **Note (v3):** This package is now **ESM-only** and requires **Node.js ≥ 20.12.0**. CJS
+> consumers must switch to `await import('@elastic/request-crypto')`.
+>
+> The key wrap algorithm changes: encryption now uses **`RSA-OAEP-256`** (RSAES-OAEP with SHA-256
+> + MGF1-SHA-256) instead of `RSA-OAEP` (SHA-1 + MGF1-SHA-1), which is not FIPS 140-3 approved.
+> Decryption accepts **both**, selected per token from its protected header, so an upgraded
+> receiver keeps decrypting tokens from senders that have not upgraded yet. The rest of the wire
+> format — `A128CBC-HS256`, `zip:DEF`, JWE compact serialization — is unchanged from v2.
+>
+> **A receiver running v2 cannot decrypt `RSA-OAEP-256` tokens**, so receivers must upgrade before
+> senders. See [docs/rsa-oaep-256-migration.md](docs/rsa-oaep-256-migration.md) for the rollout and
+> validation plan.
+
 ### High level overview
 
 There are 3 parts involved for JWK encryption:
@@ -158,6 +171,44 @@ async function handler (event, context, callback) {
 
 If the key is not in the provided JWKS the function will throw an error `Error: no key found`.
 
+## Algorithms
+
+| Constant | Value | Used for |
+|---|---|---|
+| `KEY_WRAP_ALGORITHM` | `RSA-OAEP-256` | every token this package encrypts |
+| `LEGACY_KEY_WRAP_ALGORITHM` | `RSA-OAEP` | accepted when decrypting, never emitted |
+| `SUPPORTED_KEY_WRAP_ALGORITHMS` | both of the above | the decrypt allowlist |
+| `CONTENT_ENCRYPTION_ALGORITHM` | `A128CBC-HS256` | content encryption, pinned on both sides |
+| `MAX_DECOMPRESSED_LENGTH` | `250000` | ceiling on inflating a `zip:DEF` plaintext |
+
+Decryption is pinned to these algorithms, so a token naming anything else is rejected before any
+key is used. A key's own JWK `alg` member does not affect which algorithm is used — keys are
+imported for whichever algorithm is required — so public keys already published as
+`alg: "RSA-OAEP"` encrypt with `RSA-OAEP-256` without needing to be rotated.
+
+### Watching the key wrap migration
+
+`createRequestDecryptor` takes an optional `onKeyWrap` callback that reports which key wrap
+algorithm each request actually used. Receivers can use it to tell when senders have finished
+migrating off the legacy algorithm. A throw or a rejected promise from the callback is
+swallowed, so instrumentation can never fail a request.
+
+The callback fires once the request is fully decrypted, so the count reconciles with the requests
+the service served. A request whose payload fails to decrypt is not counted; call `getJWKMetadata`
+on that body from the error handler to recover the algorithm it used.
+
+```js
+const requestDecryptor = await createRequestDecryptor(privateJWKS, {
+  onKeyWrap: ({ kid, alg, legacy }) => {
+    metrics.increment('request_crypto.key_wrap', { kid, alg, legacy: String(legacy) });
+  },
+});
+```
+
+### Key identifiers
+
+`addKey(kid)` accepts an optional `kid`. When it is omitted, the key's RFC 7638 thumbprint (SHA-256)
+is used, so unnamed keys never collide with each other.
 ## Releasing
 
 Versions and tags are created by hand; CI only publishes.

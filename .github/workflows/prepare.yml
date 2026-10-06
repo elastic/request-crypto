@@ -14,8 +14,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x, 18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [20.x, 22.x, 24.x]
+        # zip:DEF requires deflate-raw streams (Node >= 20.12); 16.x and 18.x are dropped.
 
     steps:
     - uses: actions/checkout@v6
@@ -27,3 +27,7 @@ jobs:
     - run: yarn install --frozen-lockfile
     - run: yarn prepare
     - run: yarn test:coverage
+    # The harness is documented as the gate on P0.1, so it has to start from a clean checkout.
+    # These two helpers are side-effect free; importing them proves the files are in the repo.
+    - name: Harness helper modules are present
+      run: node --input-type=module -e "await import('./migration-harness/lib/setup.mjs'); await import('./migration-harness/lib/util.mjs');"

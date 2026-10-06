@@ -1,0 +1,6 @@
+{
+  "node-option": ["import=tsx"],
+  "file": ["test/setup.ts"],
+  "spec": "test/**/*.spec.ts",
+  "timeout": 30000
+}

@@ -7,15 +7,14 @@
     "noEmitOnError": true,
     "noUnusedLocals": true,
     "allowJs": false,
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "target": "ES5",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
     "outDir": "./lib",
     "baseUrl": ".",
     "rootDir": "./src",
     "lib": [
-      "es6",
-      "es2017.object"
+      "ES2022"
     ]
   },
   "include": [

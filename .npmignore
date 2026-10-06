@@ -2,7 +2,9 @@ node_modules
 coverage
 .nyc_output
 test
+docs
 .github
 .nycrc
 tsconfig.json
 tslint.json
+migration-harness

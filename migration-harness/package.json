@@ -1,0 +1,14 @@
+{
+  "name": "request-crypto-migration-harness",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Emulates phases P0-P2 of the RSA-OAEP-256 key wrap migration locally, end to end.",
+  "scripts": {
+    "harness": "node run.mjs",
+    "p0": "node run.mjs --phase p0",
+    "p1": "node run.mjs --phase p1",
+    "p2": "node run.mjs --phase p2",
+    "soak": "node run.mjs --phase p2 --duration-ms 300000"
+  }
+}
