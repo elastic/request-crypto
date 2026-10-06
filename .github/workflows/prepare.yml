@@ -27,3 +27,7 @@ jobs:
     - run: yarn install --frozen-lockfile
     - run: yarn prepare
     - run: yarn test:coverage
+    # The harness is documented as the gate on P0.1, so it has to start from a clean checkout.
+    # These two helpers are side-effect free; importing them proves the files are in the repo.
+    - name: Harness helper modules are present
+      run: node --input-type=module -e "await import('./migration-harness/lib/setup.mjs'); await import('./migration-harness/lib/util.mjs');"

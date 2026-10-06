@@ -170,6 +170,11 @@ const decryptor = await createRequestDecryptor(privateJWKS, {
 });
 ```
 
+The counter records one increment per request the receiver fully decrypted and served, labelled by
+the key wrap algorithm that request's token carried. A body whose payload fails to decrypt is not
+counted, which keeps the counter reconcilable with served traffic; `getJWKMetadata` recovers the
+algorithm for such a body from the error handler.
+
 After the production deploy, and before any Kibana sender switches, send one `RSA-OAEP-256` sample
 from a local machine. That sample must decrypt, show up on the counter, and land in the stack
 telemetry index and the BigQuery view.

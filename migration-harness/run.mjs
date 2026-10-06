@@ -372,10 +372,13 @@ try {
       });
 
       await check('P2', 'receiver memory stays flat', async () => {
-        const growth = after.rss.lastMb - after.rss.startMb;
+        // Gate on the peak, not the final reading: a large peak followed by a collection would
+        // otherwise pass a check named "stays flat" while the same line reports the peak. The
+        // sampler in next-receiver.mjs polls every 500 ms, so this is a sampled maximum.
+        const growth = after.rss.peakMb - after.rss.startMb;
         assert.ok(
           growth < rssBudgetMb,
-          `RSS grew ${growth.toFixed(1)} MB (budget ${rssBudgetMb} MB)`
+          `peak RSS grew ${growth.toFixed(1)} MB (budget ${rssBudgetMb} MB)`
         );
         return `start ${after.rss.startMb} MB → peak ${after.rss.peakMb} MB → end ${after.rss.lastMb} MB`;
       });

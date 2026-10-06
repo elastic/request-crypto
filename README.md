@@ -193,6 +193,10 @@ algorithm each request actually used. Receivers can use it to tell when senders 
 migrating off the legacy algorithm. A throw or a rejected promise from the callback is
 swallowed, so instrumentation can never fail a request.
 
+The callback fires once the request is fully decrypted, so the count reconciles with the requests
+the service served. A request whose payload fails to decrypt is not counted; call `getJWKMetadata`
+on that body from the error handler to recover the algorithm it used.
+
 ```js
 const requestDecryptor = await createRequestDecryptor(privateJWKS, {
   onKeyWrap: ({ kid, alg, legacy }) => {

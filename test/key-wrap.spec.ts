@@ -6,6 +6,8 @@ import {
   KeyWrapInfo,
   LEGACY_KEY_WRAP_ALGORITHM,
   MAX_DECOMPRESSED_LENGTH,
+  packBody,
+  unpackBody,
 } from '../src';
 
 import * as largePayload from './fixture/large_payload.json';
@@ -338,6 +340,33 @@ describe('Key wrap algorithm — RSA-OAEP-256 out, RSA-OAEP or RSA-OAEP-256 in',
       } finally {
         process.removeListener('unhandledRejection', onUnhandled);
       }
+    });
+
+    it('does not count a request whose payload fails to authenticate', async () => {
+      // A valid JWE paired with a payload encrypted under a different passphrase. The key wrap
+      // resolves, so a hook that fired before the payload authenticated would count this request
+      // even though decrypt rejects it.
+      const seen: KeyWrapInfo[] = [];
+      const encryptor = await createRequestEncryptor(publicJWKS);
+      const decryptor = await createRequestDecryptor(privateJWKS, {
+        onKeyWrap: info => seen.push(info),
+      });
+      const first = await encryptor.encrypt('KIBANA', smallPayload);
+      const second = await encryptor.encrypt('KIBANA', smallPayload);
+      const mismatched = packBody(
+        unpackBody(first).encryptedAESKey,
+        unpackBody(second).encryptedPayload
+      );
+
+      const err = await captureError(() => decryptor.decrypt(mismatched));
+      expect(err.message).to.contain('unable to authenticate data');
+      expect(seen).to.eql([]);
+
+      // The algorithm of the failed request is still recoverable, which is the path a receiver
+      // uses from its error handler.
+      const metadata = await decryptor.getJWKMetadata(mismatched);
+      expect(metadata.header.alg).to.equal(KEY_WRAP_ALGORITHM);
+      expect(seen).to.eql([{ kid: 'KIBANA', alg: KEY_WRAP_ALGORITHM, legacy: false }]);
     });
 
     it('is optional — decryption works with no options at all', async () => {

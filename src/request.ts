@@ -40,12 +40,18 @@ export interface KeyWrapInfo {
 
 export interface DecryptorOptions {
   /**
-   * Called after each successful decrypt with the key wrap algorithm the token used. Receivers can
-   * wire this to a counter to watch legacy "RSA-OAEP" traffic drain away as senders upgrade — that
-   * measurement is what tells you when legacy support can safely be dropped, and when the receiver
-   * can run under a FIPS-only crypto provider. It fires for both algorithms so the ratio is
-   * available, not just the legacy count. A throw or a rejected promise from this callback is
-   * swallowed, so instrumentation can never fail a request. See docs/rsa-oaep-256-migration.md.
+   * Called once a request has been fully decrypted, with the key wrap algorithm its token used.
+   * Receivers can wire this to a counter to watch legacy "RSA-OAEP" traffic drain away as senders
+   * upgrade - that measurement is what tells you when legacy support can safely be dropped, and
+   * when the receiver can run under a FIPS-only crypto provider. It fires for both algorithms so
+   * the ratio is available, not just the legacy count.
+   *
+   * It fires only after the payload authenticates, so the count reconciles with the requests the
+   * service actually served. A request whose payload fails to decrypt is not counted; call
+   * `getJWKMetadata` on that body to recover the algorithm it used.
+   *
+   * A throw or a rejected promise from this callback is swallowed, so instrumentation can never
+   * fail a request. See docs/rsa-oaep-256-migration.md.
    */
   onKeyWrap?(info: KeyWrapInfo): void | Promise<void>;
 }
@@ -97,9 +103,13 @@ export async function createRequestDecryptor(
     async decrypt(encryptedBody: string) {
       const { encryptedAESKey, encryptedPayload } = unpackBody(encryptedBody);
       const { payload: encryptionKeyBuffer, header } = await jwkManager.decrypt(encryptedAESKey);
-      notifyKeyWrap(header);
       const AES = makeAESCryptoWith({ encryptionKey: encryptionKeyBuffer });
-      return AES.decrypt(encryptedPayload);
+      // Notify only once the payload authenticates. Unwrapping the AES key proves the sender's key
+      // wrap, but the request is not served until this resolves, and the counter is read as served
+      // traffic. getJWKMetadata recovers the algorithm for a body that fails here.
+      const payload = await AES.decrypt(encryptedPayload);
+      notifyKeyWrap(header);
+      return payload;
     },
     async getJWKMetadata(encryptedBody: string) {
       const { encryptedAESKey } = unpackBody(encryptedBody);
